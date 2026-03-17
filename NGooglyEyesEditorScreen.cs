@@ -35,6 +35,8 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     private static readonly Color StepCompleteBg = new(0.3f, 0.7f, 0.4f, 0.25f);
     private static readonly Color SegmentActiveBg = new(0.4f, 0.55f, 0.95f, 0.3f);
     private static readonly Color SegmentInactiveBg = new(0.12f, 0.12f, 0.18f, 0.5f);
+    private static readonly Color SelectedEntryColor = new(0.95f, 0.85f, 0.3f, 1f);
+    private Button _selectedSidebarButton;
 
     private Font _font;
 
@@ -94,6 +96,14 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     private string _currentAnimName = "idle_loop";
     private readonly List<string> _availableAnims = new();
     private Label _animPanelHint;
+    private MegaAnimationState _animState;
+    /// <summary>Cached track 0 entry — refreshed only when animation changes, not per frame.</summary>
+    private MegaTrackEntry _cachedTrackEntry;
+
+    // Secondary track (track 1) for layered animations like Vantom's charge states
+    private OptionButton _track1Dropdown;
+    private readonly List<string> _availableTrack1Anims = new();
+    private string _currentTrack1Anim = "";
 
     // Workflow guidance
     private enum WorkflowStep { SelectMonster, PlaceEyes, AdjustEyes, Export }
@@ -175,27 +185,25 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         {
             SetAnchorsPreset(LayoutPreset.FullRect);
             var screenSize = GetViewportRect().Size;
-
             _font = ResourceLoader.Load<Font>("res://fonts/kreon_regular.ttf");
             _eyeTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
             _irisTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
-
             var bg = new ColorRect { Color = BgColor };
             bg.SetAnchorsPreset(LayoutPreset.FullRect);
             AddChild(bg);
-
             BuildSidebar(screenSize);
+            BuildTabBar();
             BuildWorkflowBar(screenSize);
             BuildPreviewPanel(screenSize);
             BuildAnimationControls(screenSize);
             BuildToolbar(screenSize);
             BuildSelectionPanel(screenSize);
             BuildBonePanel(screenSize);
+            BuildCardOpacityInput();
             BuildBackButton();
             BuildHelpToggle(screenSize);
             BuildHelpOverlay(screenSize);
             BuildMonsterList();
-
             UpdateWorkflowStep(WorkflowStep.SelectMonster);
         }
         catch (Exception e)
@@ -234,19 +242,14 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         }
 
         // During playback, update the slider and frame label
-        if (_isPlaying && _animController != null)
+        if (_isPlaying && _cachedTrackEntry != null && IsInstanceValid(_spineNode))
         {
-            var animState = _animController.GetAnimationState();
-            var current = animState.GetCurrent(0);
-            if (current != null)
+            float duration = _cachedTrackEntry.GetAnimationEnd();
+            if (duration > 0f)
             {
-                float duration = current.GetAnimationEnd();
-                if (duration > 0f)
-                {
-                    float time = current.GetTrackTime() % duration;
-                    _frameSlider.SetValueNoSignal(time / duration * 100.0);
-                    _frameLabel.Text = $"{time:F2}s / {duration:F2}s";
-                }
+                float time = _cachedTrackEntry.GetTrackTime() % duration;
+                _frameSlider.SetValueNoSignal(time / duration * 100.0);
+                _frameLabel.Text = $"{time:F2}s / {duration:F2}s";
             }
         }
 
@@ -261,15 +264,13 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     private void UpdateEyePositionsFromSkeleton()
     {
         if (_animController == null || _skeletonGodot == null || _spineNode == null) return;
-
-        var animState = _animController.GetAnimationState();
-        var currentEntry = animState.GetCurrent(0);
-        if (currentEntry == null) return;
+        if (!IsInstanceValid(_spineNode)) return;
+        if (_cachedTrackEntry == null) return;
 
         float currentTime = 0f;
-        float dur = currentEntry.GetAnimationEnd();
+        float dur = _cachedTrackEntry.GetAnimationEnd();
         if (dur > 0f)
-            currentTime = currentEntry.GetTrackTime() % dur;
+            currentTime = _cachedTrackEntry.GetTrackTime() % dur;
 
         // Update the active segment indicator
         UpdateActiveSegmentLabel(currentTime);
@@ -626,7 +627,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         float previewX = SidebarWidth + Padding;
         float previewTop = Padding + 58f;
         float previewWidth = screenSize.X - SidebarWidth - Padding * 2;
-        float previewHeight = screenSize.Y - 420 - 58f;
+        float previewHeight = screenSize.Y - 447 - 58f;
 
         AddChild(new ColorRect { Color = PreviewBg, Position = new Vector2(previewX, previewTop), Size = new Vector2(previewWidth, previewHeight) });
 
@@ -656,15 +657,16 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         float panelY = screenSize.Y - 415;
         float panelWidth = screenSize.X - SidebarWidth - Padding * 2;
 
-        AddChild(new ColorRect { Color = PanelBg, Position = new Vector2(panelX, panelY), Size = new Vector2(panelWidth, 55) });
+        AddChild(new ColorRect { Color = PanelBg, Position = new Vector2(panelX, panelY), Size = new Vector2(panelWidth, 82) });
         AddChild(MakeLabel("Animation", new Vector2(panelX + 10, panelY + 4), new Vector2(100, 16), 11, Accent));
         _animPanelHint = MakeLabel("Scrub or play to preview. Eyes follow their bones in real time.",
             new Vector2(panelX + 120, panelY + 4), new Vector2(panelWidth - 140, 16), 10, TextDim);
         AddChild(_animPanelHint);
 
-        float row = panelY + 22;
+        // Row 1: primary animation (track 0)
+        float row1 = panelY + 22;
 
-        _animDropdown = new OptionButton { Position = new Vector2(panelX + 10, row), Size = new Vector2(150, 30) };
+        _animDropdown = new OptionButton { Position = new Vector2(panelX + 10, row1), Size = new Vector2(150, 28) };
         if (_font != null) _animDropdown.AddThemeFontOverride("font", _font);
         _animDropdown.AddThemeFontSizeOverride("font_size", 12);
         _animDropdown.ItemSelected += OnAnimationSelected;
@@ -672,7 +674,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
         _frameSlider = new HSlider
         {
-            Position = new Vector2(panelX + 170, row + 2),
+            Position = new Vector2(panelX + 170, row1 + 2),
             Size = new Vector2(200, 26),
             MinValue = 0, MaxValue = 100, Step = 0.1, Value = 0
         };
@@ -680,12 +682,27 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         AddChild(_frameSlider);
 
         _frameLabel = MakeLabel("0.00s / 0.00s",
-            new Vector2(panelX + 380, row + 4), new Vector2(120, 24), 12, TextDim);
+            new Vector2(panelX + 380, row1 + 4), new Vector2(120, 24), 12, TextDim);
         AddChild(_frameLabel);
 
-        _playPauseButton = MakeButton("Play", new Vector2(panelX + 510, row), new Vector2(60, 30), 12);
+        _playPauseButton = MakeButton("Play", new Vector2(panelX + 510, row1), new Vector2(60, 28), 12);
         _playPauseButton.Pressed += TogglePlayPause;
         AddChild(_playPauseButton);
+
+        // Row 2: secondary track (track 1) — for layered anims like Vantom charge states
+        float row2 = row1 + 30;
+
+        AddChild(MakeLabel("Layer:", new Vector2(panelX + 10, row2 + 3), new Vector2(45, 24), 11, TextDim));
+
+        _track1Dropdown = new OptionButton { Position = new Vector2(panelX + 55, row2), Size = new Vector2(180, 26) };
+        if (_font != null) _track1Dropdown.AddThemeFontOverride("font", _font);
+        _track1Dropdown.AddThemeFontSizeOverride("font_size", 11);
+        _track1Dropdown.TooltipText = "Optional secondary animation on track 1. Used for layered effects like Vantom's charge-up tail extensions.";
+        _track1Dropdown.ItemSelected += OnTrack1Selected;
+        AddChild(_track1Dropdown);
+
+        AddChild(MakeLabel("(optional — for enemies with layered animations like charge states)",
+            new Vector2(panelX + 245, row2 + 3), new Vector2(panelWidth - 260, 20), 10, TextDim));
     }
 
     // ════════════════════════════════════════════════
@@ -694,7 +711,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
     private void BuildToolbar(Vector2 screenSize)
     {
-        float y = screenSize.Y - 350;
+        float y = screenSize.Y - 323;
         float x = SidebarWidth + Padding;
 
         _clearButton = MakeButton("Clear All", new Vector2(x, y), new Vector2(100, 34), 12);
@@ -723,7 +740,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     private void BuildSelectionPanel(Vector2 screenSize)
     {
         float panelX = SidebarWidth + Padding;
-        float panelY = screenSize.Y - 305;
+        float panelY = screenSize.Y - 278;
         float panelWidth = screenSize.X - SidebarWidth - Padding * 2;
 
         AddChild(new ColorRect { Color = PanelBg, Position = new Vector2(panelX, panelY), Size = new Vector2(panelWidth, 55) });
@@ -782,9 +799,9 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     private void BuildBonePanel(Vector2 screenSize)
     {
         float panelX = SidebarWidth + Padding;
-        float panelY = screenSize.Y - 240;
+        float panelY = screenSize.Y - 213;
         float panelWidth = screenSize.X - SidebarWidth - Padding * 2;
-        float panelHeight = 235f;
+        float panelHeight = 208f;
 
         AddChild(new ColorRect { Color = PanelBg, Position = new Vector2(panelX, panelY), Size = new Vector2(panelWidth, panelHeight) });
 
@@ -1266,21 +1283,18 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     private void PoseSkeletonAt(string animName, float time)
     {
         if (_animController == null) return;
-        var animState = _animController.GetAnimationState();
-        var entry = animState.SetAnimation(animName, false);
+        _animState ??= _animController.GetAnimationState();
+        var entry = _animState.SetAnimation(animName, false);
         if (entry == null) return;
         entry.SetTimeScale(0f);
         entry.SetTrackTime(time);
-        animState.Update(0f);
-        animState.Apply(_animController.GetSkeleton());
+        _animState.Update(0f);
+        _animState.Apply(_animController.GetSkeleton());
     }
 
     private float GetCurrentAnimDuration()
     {
-        if (_animController == null) return 0f;
-        var animState = _animController.GetAnimationState();
-        var current = animState.GetCurrent(0);
-        return current?.GetAnimationEnd() ?? 0f;
+        return _cachedTrackEntry?.GetAnimationEnd() ?? 0f;
     }
 
     private float GetCurrentScrubTime()
@@ -1312,16 +1326,19 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     {
         foreach (MonsterModel monster in ModelDb.Monsters.OrderBy(m => m.Id.Entry))
         {
+            var monsterId = monster.Id.Entry;
+            bool hasConfig = GooglyEyesRegistry.Configs.ContainsKey(monsterId);
+
             var button = new Button
             {
-                Text = monster.Id.Entry, Flat = true,
+                Text = monsterId, Flat = true,
                 Alignment = HorizontalAlignment.Left,
                 CustomMinimumSize = new Vector2(0, 32),
                 SizeFlagsHorizontal = SizeFlags.ExpandFill
             };
-            ApplyFont(button, 14, TextNormal);
+            ApplyFont(button, 14, hasConfig ? AccentGreen : TextNormal);
             button.AddThemeColorOverride("font_hover_color", TextBright);
-            var monsterId = monster.Id.Entry;
+
             var monsterRef = monster;
             button.Pressed += () => SelectMonster(monsterRef, monsterId);
             _monsterList.AddChild(button);
@@ -1336,16 +1353,30 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     {
         ClearAllPlacements();
         ClearBoneMarkers();
+        
+        foreach (var child in _monsterList.GetChildren())
+        {
+            if (child is Button btn && btn.Text == monsterId)
+            {
+                HighlightSidebarButton(btn, monsterId, true);
+                break;
+            }
+        }
+        
         _showingBones = false;
         _showBonesButton.Text = "Show Bones";
         _skeletonGodot = null;
         _spineNode = null;
+        _animState = null;
+        _cachedTrackEntry = null;
         _currentMonsterId = monsterId;
         _isPlaying = false;
         _playPauseButton.Text = "Play";
         _zoom = 1f;
         _panOffset = Vector2.Zero;
         _editingSegmentIndex = -1;
+        _currentTrack1Anim = "";
+        _appliedTrack1Anim = "";
         ApplyZoomPan();
 
         if (_currentVisuals != null && IsInstanceValid(_currentVisuals))
@@ -1367,6 +1398,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         if (_currentVisuals.HasSpineAnimation)
         {
             _animController = _currentVisuals.SpineBody;
+            _animState = _animController.GetAnimationState();
             var skeleton = _animController.GetSkeleton();
             if (skeleton != null)
             {
@@ -1503,7 +1535,11 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     {
         _animDropdown.Clear();
         _availableAnims.Clear();
-        string[] commonAnims = { "idle_loop", "hurt", "attack", "cast", "dead", "die", "revive", "idle", "hit", "spawn", "entrance", "taunt", "buff", "debuff", "charge_up", "attack_heavy" };
+        string[] commonAnims = {
+            "idle_loop", "hurt", "attack", "cast", "dead", "die", "revive",
+            "idle", "hit", "spawn", "entrance", "taunt",
+            "buff", "debuff", "charge_up", "attack_heavy"
+        };
         foreach (var animName in commonAnims)
         {
             if (_animController.HasAnimation(animName))
@@ -1513,6 +1549,92 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
             }
         }
         if (_availableAnims.Count > 0) _animDropdown.Selected = 0;
+
+        PopulateTrack1List();
+    }
+
+    private void PopulateTrack1List()
+    {
+        _track1Dropdown.Clear();
+        _availableTrack1Anims.Clear();
+        _currentTrack1Anim = "";
+
+        // First item: no secondary track
+        _track1Dropdown.AddItem("(none)");
+        _availableTrack1Anims.Add("");
+
+        // Probe for common track 1 animation patterns
+        // These are layered animations that play on top of the base animation
+        string[] trackPatterns = {
+            "_tracks/charge_up_1", "_tracks/charged_1",
+            "_tracks/charge_up_2", "_tracks/charged_2",
+            "_tracks/charge_up_3", "_tracks/charged_3",
+            "_tracks/charge_up_4", "_tracks/charged_4",
+            "_tracks/charged_0",
+            "_tracks/attack_heavy"
+        };
+
+        foreach (var trackName in trackPatterns)
+        {
+            if (_animController.HasAnimation(trackName))
+            {
+                _availableTrack1Anims.Add(trackName);
+                _track1Dropdown.AddItem(trackName);
+            }
+        }
+
+        // Also try to discover any animation names containing "_tracks/" by probing
+        // common suffixes — this catches patterns we haven't hardcoded
+        for (int i = 1; i <= 10; i++)
+        {
+            string chargeName = "_tracks/charge_up_" + i;
+            string chargedName = "_tracks/charged_" + i;
+            if (!_availableTrack1Anims.Contains(chargeName) && _animController.HasAnimation(chargeName))
+            {
+                _availableTrack1Anims.Add(chargeName);
+                _track1Dropdown.AddItem(chargeName);
+            }
+            if (!_availableTrack1Anims.Contains(chargedName) && _animController.HasAnimation(chargedName))
+            {
+                _availableTrack1Anims.Add(chargedName);
+                _track1Dropdown.AddItem(chargedName);
+            }
+        }
+
+        _track1Dropdown.Selected = 0;
+    }
+
+    private void OnTrack1Selected(long index)
+    {
+        if (index < 0 || index >= _availableTrack1Anims.Count) return;
+        _currentTrack1Anim = _availableTrack1Anims[(int)index];
+        ApplyTrack1();
+    }
+
+    /// <summary>
+    /// Applies or clears the track 1 animation. Only calls SetAnimation
+    /// when the selection actually changes, to avoid duplicate signal connection errors.
+    /// </summary>
+    private string _appliedTrack1Anim = "";
+    private void ApplyTrack1()
+    {
+        if (_animController == null) return;
+        if (_currentTrack1Anim == _appliedTrack1Anim) return;
+
+        _appliedTrack1Anim = _currentTrack1Anim;
+        _animState ??= _animController.GetAnimationState();
+
+        if (string.IsNullOrEmpty(_currentTrack1Anim))
+        {
+            try { _animState.AddEmptyAnimation(1); } catch { }
+            return;
+        }
+
+        var entry = _animState.SetAnimation(_currentTrack1Anim, true, 1);
+        if (entry != null)
+        {
+            entry.SetTimeScale(_isPlaying ? 1f : 0f);
+        }
     }
 
     private void OnAnimationSelected(long index)
@@ -1529,15 +1651,16 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     {
         if (_animController == null) return;
         _currentAnimName = animName;
-        var animState = _animController.GetAnimationState();
-        var entry = animState.SetAnimation(animName, false);
+        _animState ??= _animController.GetAnimationState();
+        var entry = _animState.SetAnimation(animName, false);
         if (entry == null) return;
+        _cachedTrackEntry = entry;
         entry.SetTimeScale(0f);
         float duration = entry.GetAnimationEnd();
         float time = normalizedTime * duration;
         entry.SetTrackTime(time);
-        animState.Update(0f);
-        animState.Apply(_animController.GetSkeleton());
+        _animState.Update(0f);
+        _animState.Apply(_animController.GetSkeleton());
         _frameLabel.Text = $"{time:F2}s / {duration:F2}s";
         if (_showingBones) RefreshBonePositions();
     }
@@ -1567,11 +1690,21 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         if (_animController == null) return;
         _isPlaying = !_isPlaying;
         _playPauseButton.Text = _isPlaying ? "Pause" : "Play";
-        var animState = _animController.GetAnimationState();
-        var current = animState.GetCurrent(0);
-        if (current == null) return;
-        if (_isPlaying) { current.SetTimeScale(1f); current.SetLoop(true); }
-        else { current.SetTimeScale(0f); }
+
+        // Track 0
+        if (_cachedTrackEntry != null)
+        {
+            if (_isPlaying) { _cachedTrackEntry.SetTimeScale(1f); _cachedTrackEntry.SetLoop(true); }
+            else { _cachedTrackEntry.SetTimeScale(0f); }
+        }
+
+        // Track 1 — only accessed on toggle, so one GetCurrent call is fine
+        _animState ??= _animController.GetAnimationState();
+        var track1 = _animState.GetCurrent(1);
+        if (track1 != null)
+        {
+            track1.SetTimeScale(_isPlaying ? 1f : 0f);
+        }
     }
 
     // ════════════════════════════════════════════════
@@ -1672,6 +1805,21 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         _panOffset = localPos - (_zoom / oldZoom) * (localPos - _panOffset);
         ApplyZoomPan();
     }
+    
+    private void HighlightSidebarButton(Button button, string id, bool isMonster)
+    {
+        // Restore previous button's color
+        if (_selectedSidebarButton != null && IsInstanceValid(_selectedSidebarButton))
+        {
+            bool prevHasConfig = isMonster
+                ? GooglyEyesRegistry.Configs.ContainsKey(_selectedSidebarButton.Text)
+                : CardGooglyEyesRegistry.Configs.ContainsKey(_selectedSidebarButton.Text);
+            ApplyFont(_selectedSidebarButton, isMonster ? 14 : 12, prevHasConfig ? AccentGreen : TextNormal);
+        }
+
+        _selectedSidebarButton = button;
+        ApplyFont(button, isMonster ? 14 : 12, SelectedEntryColor);
+    }
 
     private Vector2 ScreenToContent(Vector2 localPos) => (localPos - _panOffset) / _zoom;
 
@@ -1721,12 +1869,38 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     // ════════════════════════════════════════════════
 
     public override void _Input(InputEvent @event)
+    
+{
+    var focusOwner = GetViewport().GuiGetFocusOwner();
+    if (focusOwner is SpinBox or LineEdit)
     {
-        if (_helpVisible)
+        if (@event is InputEventMouseButton mb && mb.Pressed)
         {
-            if (@event is InputEventMouseButton mb && mb.Pressed) return;
+            var focusRect = new Rect2(focusOwner.GlobalPosition, focusOwner.Size);
+            if (!focusRect.HasPoint(GetGlobalMousePosition()))
+            {
+                focusOwner.ReleaseFocus();
+                // Fall through to normal input handling
+            }
+            else
+            {
+                return; // Click is inside the spinbox, let it handle it
+            }
         }
-        if (_currentVisuals == null) return;
+        else
+        {
+            return; // Non-click events while focused, let the control handle them
+        }
+    }
+    if (_helpVisible)
+    {
+        if (@event is InputEventMouseButton mb && mb.Pressed) return;
+    }
+
+    // Card mode: route input separately
+    if (_editorMode == EditorMode.Cards)
+    {
+        if (_previewCard == null) return;
 
         var mousePos = GetGlobalMousePosition();
         var previewRect = new Rect2(_previewArea.GlobalPosition, _previewArea.Size);
@@ -1737,90 +1911,140 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
         if (@event is InputEventMouseButton mouseButton)
         {
-            if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)
-            {
-                var hit = FindEyeAt(contentPos);
-                if (hit != null)
-                {
-                    SelectEye(hit);
-                    _dragging = hit;
-                    _isDragging = true;
-                    UpdateWorkflowStep(WorkflowStep.AdjustEyes);
-                }
-                else
-                {
-                    DeselectEye();
-                    PlaceEye(contentPos);
-                    SelectEye(_placements[^1]);
-                    if (_currentStep == WorkflowStep.PlaceEyes && _placements.Count >= 2)
-                        UpdateWorkflowStep(WorkflowStep.AdjustEyes);
-                }
-                GetViewport().SetInputAsHandled();
-            }
-            else if (mouseButton.ButtonIndex == MouseButton.Left && !mouseButton.Pressed)
-            {
-                if (_isDragging && _dragging != null)
-                {
-                    // If editing a segment, cache offset for that segment
-                    if (_editingSegmentIndex >= 0 && _dragging == _selectedEye
-                        && _selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs)
-                        && _editingSegmentIndex < segs.Count)
-                    {
-                        CacheSegmentOffsetFromCurrentPose(segs[_editingSegmentIndex]);
-                        RefreshSegmentUI();
-                    }
-                    else
-                    {
-                        CacheSpineOffset(_dragging);
-                    }
-                }
-                _isDragging = false;
-                _dragging = null;
-            }
-            else if (mouseButton.ButtonIndex == MouseButton.Middle && mouseButton.Pressed)
+            if (mouseButton.ButtonIndex == MouseButton.Middle && mouseButton.Pressed)
             {
                 _isPanning = true;
                 _panStart = localPos - _panOffset;
                 GetViewport().SetInputAsHandled();
+                return;
             }
             else if (mouseButton.ButtonIndex == MouseButton.Middle && !mouseButton.Pressed)
             {
                 _isPanning = false;
+                return;
             }
-            else if (mouseButton.ButtonIndex == MouseButton.Right && mouseButton.Pressed)
+
+            if (mouseButton.ButtonIndex == MouseButton.WheelUp && FindCardEyeAt(contentPos) == null)
             {
-                var hit = FindEyeAt(contentPos);
-                if (hit != null) { RemoveEye(hit); GetViewport().SetInputAsHandled(); }
-            }
-            else if (mouseButton.ButtonIndex == MouseButton.WheelUp)
-            {
-                var hit = FindEyeAt(contentPos);
-                if (hit != null) ResizeEye(hit, 0.1f); else ZoomAt(localPos, 1.1f);
+                ZoomAt(localPos, 1.1f);
                 GetViewport().SetInputAsHandled();
+                return;
             }
-            else if (mouseButton.ButtonIndex == MouseButton.WheelDown)
+            if (mouseButton.ButtonIndex == MouseButton.WheelDown && FindCardEyeAt(contentPos) == null)
             {
-                var hit = FindEyeAt(contentPos);
-                if (hit != null) ResizeEye(hit, -0.1f); else ZoomAt(localPos, 1f / 1.1f);
+                ZoomAt(localPos, 1f / 1.1f);
                 GetViewport().SetInputAsHandled();
+                return;
             }
         }
-        else if (@event is InputEventMouseMotion)
+        else if (@event is InputEventMouseMotion && _isPanning)
         {
-            if (_isPanning)
+            _panOffset = localPos - _panStart;
+            ApplyZoomPan();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (HandleCardInput(@event, localPos, contentPos))
+            GetViewport().SetInputAsHandled();
+        return;
+    }
+
+    // Monster mode: existing logic unchanged
+    if (_currentVisuals == null) return;
+
+    var mousePos2 = GetGlobalMousePosition();
+    var previewRect2 = new Rect2(_previewArea.GlobalPosition, _previewArea.Size);
+    if (!previewRect2.HasPoint(mousePos2)) return;
+
+    var localPos2 = mousePos2 - _previewArea.GlobalPosition;
+    var contentPos2 = ScreenToContent(localPos2);
+
+    if (@event is InputEventMouseButton mouseButton2)
+    {
+        if (mouseButton2.ButtonIndex == MouseButton.Left && mouseButton2.Pressed)
+        {
+            var hit = FindEyeAt(contentPos2);
+            if (hit != null)
             {
-                _panOffset = localPos - _panStart;
-                ApplyZoomPan();
-                GetViewport().SetInputAsHandled();
+                SelectEye(hit);
+                _dragging = hit;
+                _isDragging = true;
+                UpdateWorkflowStep(WorkflowStep.AdjustEyes);
             }
-            else if (_isDragging && _dragging != null)
+            else
             {
-                _dragging.Position = contentPos;
-                _dragging.Container.Position = contentPos;
-                GetViewport().SetInputAsHandled();
+                DeselectEye();
+                PlaceEye(contentPos2);
+                SelectEye(_placements[^1]);
+                if (_currentStep == WorkflowStep.PlaceEyes && _placements.Count >= 2)
+                    UpdateWorkflowStep(WorkflowStep.AdjustEyes);
             }
+            GetViewport().SetInputAsHandled();
+        }
+        else if (mouseButton2.ButtonIndex == MouseButton.Left && !mouseButton2.Pressed)
+        {
+            if (_isDragging && _dragging != null)
+            {
+                if (_editingSegmentIndex >= 0 && _dragging == _selectedEye
+                    && _selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs)
+                    && _editingSegmentIndex < segs.Count)
+                {
+                    CacheSegmentOffsetFromCurrentPose(segs[_editingSegmentIndex]);
+                    RefreshSegmentUI();
+                }
+                else
+                {
+                    CacheSpineOffset(_dragging);
+                }
+            }
+            _isDragging = false;
+            _dragging = null;
+        }
+        else if (mouseButton2.ButtonIndex == MouseButton.Middle && mouseButton2.Pressed)
+        {
+            _isPanning = true;
+            _panStart = localPos2 - _panOffset;
+            GetViewport().SetInputAsHandled();
+        }
+        else if (mouseButton2.ButtonIndex == MouseButton.Middle && !mouseButton2.Pressed)
+        {
+            _isPanning = false;
+        }
+        else if (mouseButton2.ButtonIndex == MouseButton.Right && mouseButton2.Pressed)
+        {
+            var hit = FindEyeAt(contentPos2);
+            if (hit != null) { RemoveEye(hit); GetViewport().SetInputAsHandled(); }
+        }
+        else if (mouseButton2.ButtonIndex == MouseButton.WheelUp)
+        {
+            var hit = FindEyeAt(contentPos2);
+            if (hit != null) ResizeEye(hit, 0.1f); else ZoomAt(localPos2, 1.1f);
+            GetViewport().SetInputAsHandled();
+        }
+        else if (mouseButton2.ButtonIndex == MouseButton.WheelDown)
+        {
+            var hit = FindEyeAt(contentPos2);
+            if (hit != null) ResizeEye(hit, -0.1f); else ZoomAt(localPos2, 1f / 1.1f);
+            GetViewport().SetInputAsHandled();
         }
     }
+    else if (@event is InputEventMouseMotion)
+    {
+        if (_isPanning)
+        {
+            _panOffset = localPos2 - _panStart;
+            ApplyZoomPan();
+            GetViewport().SetInputAsHandled();
+        }
+        else if (_isDragging && _dragging != null)
+        {
+            _dragging.Position = contentPos2;
+            _dragging.Container.Position = contentPos2;
+            GetViewport().SetInputAsHandled();
+        }
+    }
+}
 
     // ════════════════════════════════════════════════
     //  EYE PLACEMENT / SELECTION
@@ -1877,12 +2101,23 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
     private void UndoLastPlacement()
     {
+        if (_editorMode == EditorMode.Cards)
+        {
+            if (_cardPlacements.Count > 0)
+                RemoveCardEye(_cardPlacements[^1]);
+            return;
+        }
         if (_placements.Count == 0) return;
         RemoveEye(_placements[^1]);
     }
 
     private void ClearAllPlacements()
     {
+        if (_editorMode == EditorMode.Cards)
+        {
+            ClearAllCardPlacements();
+            return;
+        }
         foreach (var p in _placements) if (IsInstanceValid(p.Container)) p.Container.QueueFree();
         _placements.Clear();
         DeselectEye();
@@ -1890,6 +2125,11 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
     private void OnScaleInputChanged(double value)
     {
+        if (_editorMode == EditorMode.Cards)
+        {
+            OnCardScaleChanged(value);
+            return;
+        }
         if (_selectedEye == null) return;
         _selectedEye.Scale = (float)value;
         _selectedEye.Container.Scale = Vector2.One * _selectedEye.Scale;
@@ -1897,6 +2137,13 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
     private void DuplicateSelectedEye()
     {
+        if (_editorMode == EditorMode.Cards)
+        {
+            if (_selectedCardEye == null) return;
+            PlaceCardEye(_selectedCardEye.Position + new Vector2(30, 30), _selectedCardEye.Scale, _selectedCardEye.Opacity);
+            SelectCardEye(_cardPlacements[^1]);
+            return;
+        }
         if (_selectedEye == null) return;
         PlaceEye(_selectedEye.Position + new Vector2(30, 30));
         var newEye = _placements[^1];
@@ -1904,7 +2151,6 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         newEye.AnchorBone = _selectedEye.AnchorBone;
         newEye.HiddenByDefault = _selectedEye.HiddenByDefault;
         newEye.Container.Scale = Vector2.One * newEye.Scale;
-        // Deep-copy bone timelines
         foreach (var kvp in _selectedEye.BoneTimelines)
         {
             newEye.BoneTimelines[kvp.Key] = kvp.Value.Select(s => new BoneSegment
@@ -1955,86 +2201,79 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
     // ════════════════════════════════════════════════
 
     private void ExportConfig()
+{
+    if (_editorMode == EditorMode.Cards)
     {
-        if (_placements.Count == 0 || string.IsNullOrEmpty(_currentMonsterId))
+        ExportCardConfig();
+        return;
+    }
+    if (_placements.Count == 0 || string.IsNullOrEmpty(_currentMonsterId))
+    {
+        _outputLabel.Text = "Nothing to export.";
+        return;
+    }
+    UpdateWorkflowStep(WorkflowStep.Export);
+    if (_skeletonGodot == null && _animController != null)
+    {
+        var skeleton = _animController.GetSkeleton();
+        if (skeleton != null) { _skeletonGodot = skeleton.BoundObject as GodotObject; _spineNode = _animController.BoundObject as Node2D; }
+    }
+    float spineScale = _spineNode != null ? _spineNode.Scale.X : 1f;
+    var sb = new StringBuilder();
+    sb.AppendLine("// Googly Eyes config for: " + _currentMonsterId);
+    sb.AppendLine("{ \"" + _currentMonsterId + "\", new EyeConfig[] {");
+    foreach (var p in _placements)
+    {
+        var offset = ComputeSpineOffset(p);
+        if (offset == null) return;
+        sb.Append("    new EyeConfig { ");
+        sb.Append("Offset = new Vector2(" + offset.Value.X.ToString("F1") + "f, " + offset.Value.Y.ToString("F1") + "f), ");
+        sb.Append("Scale = " + (p.Scale / spineScale).ToString("F2") + "f, ");
+        sb.Append("AnchorBone = \"" + p.AnchorBone + "\"");
+        if (p.HiddenByDefault)
+            sb.Append(", HiddenByDefault = true");
+        if (p.BoneTimelines.Count > 0)
         {
-            _outputLabel.Text = "Nothing to export.";
-            return;
-        }
-
-        UpdateWorkflowStep(WorkflowStep.Export);
-
-        if (_skeletonGodot == null && _animController != null)
-        {
-            var skeleton = _animController.GetSkeleton();
-            if (skeleton != null) { _skeletonGodot = skeleton.BoundObject as GodotObject; _spineNode = _animController.BoundObject as Node2D; }
-        }
-
-        float spineScale = _spineNode != null ? _spineNode.Scale.X : 1f;
-
-        var sb = new StringBuilder();
-        sb.AppendLine("// Googly Eyes config for: " + _currentMonsterId);
-        sb.AppendLine("{ \"" + _currentMonsterId + "\", new EyeConfig[] {");
-
-        foreach (var p in _placements)
-        {
-            var offset = ComputeSpineOffset(p);
-            if (offset == null) return;
-
-            sb.Append("    new EyeConfig { ");
-            sb.Append("Offset = new Vector2(" + offset.Value.X.ToString("F1") + "f, " + offset.Value.Y.ToString("F1") + "f), ");
-            sb.Append("Scale = " + (p.Scale / spineScale).ToString("F2") + "f, ");
-            sb.Append("AnchorBone = \"" + p.AnchorBone + "\"");
-
-            if (p.HiddenByDefault)
-                sb.Append(", HiddenByDefault = true");
-
-            if (p.BoneTimelines.Count > 0)
+            sb.AppendLine(",");
+            sb.Append("        BoneSegments = new Dictionary<string, BoneSegment[]> {");
+            foreach (var tlKvp in p.BoneTimelines)
             {
-                sb.AppendLine(",");
-                sb.Append("        BoneSegments = new Dictionary<string, BoneSegment[]> {");
-                foreach (var tlKvp in p.BoneTimelines)
+                if (tlKvp.Value.Count == 0) continue;
+                sb.AppendLine();
+                sb.Append("            { \"" + tlKvp.Key + "\", new BoneSegment[] {");
+                foreach (var seg in tlKvp.Value)
                 {
-                    if (tlKvp.Value.Count == 0) continue;
                     sb.AppendLine();
-                    sb.Append("            { \"" + tlKvp.Key + "\", new BoneSegment[] {");
-                    foreach (var seg in tlKvp.Value)
+                    sb.Append("                new BoneSegment { ");
+                    sb.Append("StartTime = " + seg.StartTime.ToString("F2") + "f, ");
+                    sb.Append("EndTime = " + seg.EndTime.ToString("F2") + "f, ");
+                    if (seg.Hidden)
                     {
-                        sb.AppendLine();
-                        sb.Append("                new BoneSegment { ");
-                        sb.Append("StartTime = " + seg.StartTime.ToString("F2") + "f, ");
-                        sb.Append("EndTime = " + seg.EndTime.ToString("F2") + "f, ");
-                        if (seg.Hidden)
-                        {
-                            sb.Append("Hidden = true");
-                        }
-                        else
-                        {
-                            var segOffset = seg.HasSpineOffset ? seg.SpineOffset : Vector2.Zero;
-                            sb.Append("BoneName = \"" + seg.BoneName + "\", ");
-                            sb.Append("Offset = new Vector2(" + segOffset.X.ToString("F1") + "f, " + segOffset.Y.ToString("F1") + "f)");
-                        }
-                        sb.Append(" },");
+                        sb.Append("Hidden = true");
                     }
-                    sb.AppendLine();
-                    sb.Append("            } },");
+                    else
+                    {
+                        var segOffset = seg.HasSpineOffset ? seg.SpineOffset : Vector2.Zero;
+                        sb.Append("BoneName = \"" + seg.BoneName + "\", ");
+                        sb.Append("Offset = new Vector2(" + segOffset.X.ToString("F1") + "f, " + segOffset.Y.ToString("F1") + "f)");
+                    }
+                    sb.Append(" },");
                 }
                 sb.AppendLine();
-                sb.Append("        }");
+                sb.Append("            } },");
             }
-
-            sb.AppendLine(" },");
+            sb.AppendLine();
+            sb.Append("        }");
         }
-
-        sb.AppendLine("}},");
-
-        GD.Print("[GooglyEyes] === EXPORT ===");
-        GD.Print(sb.ToString());
-        GD.Print("[GooglyEyes] === END EXPORT ===");
-
-        int totalSegs = _placements.Sum(p => p.BoneTimelines.Values.Sum(l => l.Count));
-        _outputLabel.Text = "Exported " + _placements.Count + " eye(s), " + totalSegs + " segment(s) — check console!";
+        sb.AppendLine(" },");
     }
+    sb.AppendLine("}},");
+    GD.Print("[GooglyEyes] === EXPORT ===");
+    GD.Print(sb.ToString());
+    GD.Print("[GooglyEyes] === END EXPORT ===");
+    int totalSegs = _placements.Sum(p => p.BoneTimelines.Values.Sum(l => l.Count));
+    _outputLabel.Text = "Exported " + _placements.Count + " eye(s), " + totalSegs + " segment(s) — check console!";
+}
 
     private Vector2? ComputeSpineOffset(EyePlacement p)
     {
@@ -2058,6 +2297,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
     public override void OnSubmenuClosed()
     {
+        CleanupCardMode();
         base.OnSubmenuClosed();
         ClearAllPlacements();
         ClearBoneMarkers();

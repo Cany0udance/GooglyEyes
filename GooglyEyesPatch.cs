@@ -88,11 +88,13 @@ public static class GooglyEyesPatch
 
                 var eyeContainer = new Node2D();
                 eyeContainer.Name = "GooglyEye";
-                eyeContainer.ZIndex = 10;
+                eyeContainer.ZIndex = 2;
                 eyeContainer.Scale = Vector2.One * config.Scale;
 
                 var eyeSprite = new Sprite2D { Texture = eyeTexture, Name = "EyeBacking" };
                 var irisSprite = new Sprite2D { Texture = irisTexture, Name = "Iris", ZIndex = 1 };
+                eyeSprite.UseParentMaterial = true;
+                irisSprite.UseParentMaterial = true;
                 eyeContainer.AddChild(eyeSprite);
                 eyeContainer.AddChild(irisSprite);
                 spineNode.AddChild(eyeContainer);

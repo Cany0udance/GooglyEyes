@@ -41,8 +41,5 @@ public static class GooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(3.9f, -26.0f), Scale = 0.33f, AnchorBone = "face_twist" },
             new EyeConfig { Offset = new Vector2(7.0f, 41.0f), Scale = 0.33f, AnchorBone = "face_twist" },
         }},
-        { "VANTOM", new EyeConfig[] {
-            new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.44f, AnchorBone = "track_blade" },
-        }},
     };
 }
