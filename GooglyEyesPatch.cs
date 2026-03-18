@@ -20,16 +20,12 @@ public static class GooglyEyesPatch
         public Vector2 PrevWorldPos;
         public bool Initialized;
         public float MaxRadius;
-
+        public float LastResolvedOpacity = 1f;
         // Config reference
         public EyeConfig SourceConfig;
         public bool HiddenByDefault;
         public bool CurrentlyHidden;
-
-        // Current animation tracking (for timed segments)
-        public string CurrentAnimName;
     }
-
     private class CreatureEyeState
     {
         public List<EyePhysics> Eyes;
@@ -37,17 +33,14 @@ public static class GooglyEyesPatch
         public Node2D SpineNode;
         public MegaSprite AnimController;
     }
-
     private static readonly Dictionary<ulong, CreatureEyeState> CreatureStates = new();
     private static readonly Random Rng = new();
-
     private const float Gravity = 300f;
     private const float Damping = 0.99f;
     private const float Bounciness = 0.9f;
     private const float BoneForceMultiplier = 3f;
     private const float ShakeImpulseMin = 1500f;
     private const float ShakeImpulseMax = 3000f;
-
     [HarmonyPatch("_Ready")]
     [HarmonyPostfix]
     static void Ready_Postfix(NCreature __instance)
@@ -56,41 +49,30 @@ public static class GooglyEyesPatch
         {
             var monster = __instance.Entity?.Monster;
             if (monster == null) return;
-
             var monsterId = monster.Id.Entry;
             if (!GooglyEyesRegistry.Configs.TryGetValue(monsterId, out var configs)) return;
-
             var spineBody = __instance.Visuals?.SpineBody;
             if (spineBody == null) return;
-
             var skeleton = spineBody.GetSkeleton();
             if (skeleton == null) return;
-
             var skeletonGodot = skeleton.BoundObject as GodotObject;
             if (skeletonGodot == null) return;
-
             var spineNode = spineBody.BoundObject as Node2D;
             if (spineNode == null) return;
-
             var eyeTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
             var irisTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
             if (eyeTexture == null || irisTexture == null) return;
-
             float eyeRadius = eyeTexture.GetWidth() / 2f;
             float irisRadius = irisTexture.GetWidth() / 2f;
-
             var localEyes = new List<EyePhysics>();
-
             foreach (var config in configs)
             {
                 var anchorBone = skeletonGodot.Call("find_bone", config.AnchorBone).AsGodotObject();
                 if (anchorBone == null) continue;
-
                 var eyeContainer = new Node2D();
                 eyeContainer.Name = "GooglyEye";
                 eyeContainer.ZIndex = 2;
                 eyeContainer.Scale = Vector2.One * config.Scale;
-
                 var eyeSprite = new Sprite2D { Texture = eyeTexture, Name = "EyeBacking" };
                 var irisSprite = new Sprite2D { Texture = irisTexture, Name = "Iris", ZIndex = 1 };
                 eyeSprite.UseParentMaterial = true;
@@ -98,13 +80,10 @@ public static class GooglyEyesPatch
                 eyeContainer.AddChild(eyeSprite);
                 eyeContainer.AddChild(irisSprite);
                 spineNode.AddChild(eyeContainer);
-
                 float maxRadius = eyeRadius - irisRadius;
                 if (maxRadius < 1f) maxRadius = 1f;
-
                 bool hidden = config.HiddenByDefault;
                 eyeContainer.Visible = !hidden;
-
                 localEyes.Add(new EyePhysics
                 {
                     AnchorBone = anchorBone,
@@ -120,11 +99,9 @@ public static class GooglyEyesPatch
                     MaxRadius = maxRadius,
                     SourceConfig = config,
                     HiddenByDefault = hidden,
-                    CurrentlyHidden = hidden,
-                    CurrentAnimName = "idle_loop"
+                    CurrentlyHidden = hidden
                 });
             }
-
             if (localEyes.Count > 0)
             {
                 var state = new CreatureEyeState
@@ -135,33 +112,12 @@ public static class GooglyEyesPatch
                     AnimController = spineBody
                 };
                 CreatureStates[__instance.GetInstanceId()] = state;
-
                 // Physics update on world transforms
                 spineNode.Connect("world_transforms_changed", Callable.From<Variant>((arg) =>
                 {
                     if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
                     UpdateEyes(state);
                 }));
-
-                // Animation change detection — update the current anim name
-                spineBody.ConnectAnimationStarted(
-                    Callable.From<GodotObject, GodotObject, GodotObject>(
-                        (sprite, animState, trackEntry) =>
-                        {
-                            try
-                            {
-                                if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
-                                var entry = new MegaTrackEntry((Variant)trackEntry);
-                                var animName = entry.GetAnimation().GetName();
-                                foreach (var eye in state.Eyes)
-                                    eye.CurrentAnimName = animName;
-                            }
-                            catch (Exception e)
-                            {
-                                GD.PrintErr("[GooglyEyes] AnimStarted error: " + e);
-                            }
-                        }));
-
                 GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to " + monsterId);
             }
         }
@@ -170,17 +126,18 @@ public static class GooglyEyesPatch
             GD.PrintErr("[GooglyEyes] Error: " + e);
         }
     }
-
     /// <summary>
-    /// Main per-frame eye update. Resolves bone, offset, and visibility
+    /// Main per-frame eye update. Resolves bone, offset, visibility, and opacity
     /// based on current animation time and bone segments.
+    /// Reads animation name and time directly from the track entry so they're
+    /// always in sync (no race with async animation-started callbacks).
     /// </summary>
     private static void UpdateEyes(CreatureEyeState state)
     {
         if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
-
-        // Get current animation time
+        // Get current animation name and time from the track entry directly
         float currentTime = 0f;
+        string currentAnimName = "idle_loop";
         try
         {
             var animState = state.AnimController.GetAnimationState();
@@ -189,26 +146,26 @@ public static class GooglyEyesPatch
             {
                 float duration = currentEntry.GetAnimationEnd();
                 if (duration > 0f)
-                    currentTime = currentEntry.GetTrackTime() % duration;
+                {
+                    float rawTime = currentEntry.GetTrackTime();
+                    currentTime = rawTime >= duration ? duration : rawTime % duration;
+                }
+                currentAnimName = currentEntry.GetAnimation().GetName();
             }
         }
         catch (ObjectDisposedException)
         {
             return;
         }
-
         foreach (var eye in state.Eyes)
         {
             if (!GodotObject.IsInstanceValid(eye.Container)) continue;
-
-            // Resolve visibility, bone, and offset from segments
+            // Resolve visibility, bone, offset, and opacity from segments
             string activeBone;
             Vector2 activeOffset;
             bool shouldHide;
-
-            ResolveSegmentState(eye, currentTime, state.SkeletonGodot,
-                out activeBone, out activeOffset, out shouldHide);
-
+            ResolveSegmentState(eye, currentAnimName, currentTime, state.SkeletonGodot,
+                out activeBone, out activeOffset, out shouldHide, out float resolvedOpacity);
             // Apply visibility
             if (shouldHide)
             {
@@ -219,7 +176,6 @@ public static class GooglyEyesPatch
                 }
                 continue;
             }
-
             if (eye.CurrentlyHidden)
             {
                 // Becoming visible — reset physics so there's no wild iris snap
@@ -230,7 +186,9 @@ public static class GooglyEyesPatch
                 eye.IrisVelocity = Vector2.Zero;
                 eye.Iris.Position = Vector2.Zero;
             }
-
+            // Apply opacity
+            eye.Container.Modulate = new Color(1f, 1f, 1f, resolvedOpacity);
+            eye.LastResolvedOpacity = resolvedOpacity;
             // Switch bone if needed
             if (activeBone != eye.AnchorBoneName)
             {
@@ -246,17 +204,13 @@ public static class GooglyEyesPatch
                     eye.Iris.Position = Vector2.Zero;
                 }
             }
-
             eye.ConfigOffset = activeOffset;
-
             // Position the eye (rotate offset by bone's world rotation)
             var wx = (float)eye.AnchorBone.Call("get_world_x");
             var wy = (float)eye.AnchorBone.Call("get_world_y");
             var bonePos = new Vector2(wx, wy);
-
             var rotatedOffset = RotateOffsetByBone(eye.ConfigOffset, eye.AnchorBone);
             eye.Container.Position = bonePos + rotatedOffset;
-
             // Iris physics
             if (!eye.Initialized)
             {
@@ -264,17 +218,13 @@ public static class GooglyEyesPatch
                 eye.Initialized = true;
                 continue;
             }
-
             var boneDelta = bonePos - eye.PrevWorldPos;
             eye.PrevWorldPos = bonePos;
-
             eye.IrisVelocity -= boneDelta * BoneForceMultiplier;
-
             float dt = 1f / 60f;
             eye.IrisVelocity += Vector2.Down * Gravity * dt;
             eye.IrisVelocity *= Damping;
             eye.IrisOffset += eye.IrisVelocity * dt;
-
             float dist = eye.IrisOffset.Length();
             if (dist > eye.MaxRadius)
             {
@@ -284,27 +234,22 @@ public static class GooglyEyesPatch
                 if (dot > 0)
                     eye.IrisVelocity -= normal * dot * (1f + Bounciness);
             }
-
             eye.Iris.Position = eye.IrisOffset;
         }
     }
-
     /// <summary>
-    /// Resolves which bone, offset, and visibility state an eye should have
-    /// based on its current animation and time within that animation.
+    /// Resolves which bone, offset, visibility, and opacity an eye should have
+    /// based on the given animation name and time within that animation.
     /// </summary>
     private static void ResolveSegmentState(
-        EyePhysics eye, float time, GodotObject skeletonGodot,
-        out string boneName, out Vector2 offset, out bool hidden)
+        EyePhysics eye, string animName, float time, GodotObject skeletonGodot,
+        out string boneName, out Vector2 offset, out bool hidden, out float opacity)
     {
         var config = eye.SourceConfig;
-
-        // Check if there are timed segments for the current animation
         if (config.BoneSegments != null
-            && config.BoneSegments.TryGetValue(eye.CurrentAnimName, out var segments)
+            && config.BoneSegments.TryGetValue(animName, out var segments)
             && segments.Length > 0)
         {
-            // Find the active segment for the current time
             for (int i = 0; i < segments.Length; i++)
             {
                 var seg = segments[i];
@@ -313,24 +258,26 @@ public static class GooglyEyesPatch
                     hidden = seg.Hidden;
                     boneName = seg.Hidden ? eye.AnchorBoneName : (seg.BoneName ?? config.AnchorBone);
                     offset = seg.Hidden ? eye.ConfigOffset : seg.Offset;
+                    // Lerp opacity across the segment duration
+                    float segDur = seg.EndTime - seg.StartTime;
+                    float t = segDur > 0f ? (time - seg.StartTime) / segDur : 0f;
+                    opacity = Mathf.Lerp(seg.OpacityStart, seg.OpacityEnd, t);
                     return;
                 }
             }
-
-            // Past all segments — use last segment's state
             var last = segments[^1];
             hidden = last.Hidden;
             boneName = last.Hidden ? eye.AnchorBoneName : (last.BoneName ?? config.AnchorBone);
             offset = last.Hidden ? eye.ConfigOffset : last.Offset;
+            opacity = last.OpacityEnd;
             return;
         }
-
-        // No segments for this animation — use defaults
+        // No segments for this animation — carry forward the last resolved opacity
         hidden = config.HiddenByDefault;
         boneName = config.AnchorBone;
         offset = config.Offset;
+        opacity = eye.LastResolvedOpacity;
     }
-
     /// <summary>
     /// Rotates a bone-local offset by the bone's world rotation so the
     /// eye stays in the correct position relative to the bone even when
@@ -348,20 +295,16 @@ public static class GooglyEyesPatch
             offset.X * sin + offset.Y * cos
         );
     }
-
     [HarmonyPatch("SetAnimationTrigger")]
     [HarmonyPostfix]
     static void SetAnimationTrigger_Postfix(NCreature __instance, string trigger)
     {
         if (trigger != "Hit" && trigger != "Attack") return;
         if (!CreatureStates.TryGetValue(__instance.GetInstanceId(), out var state)) return;
-
         float impulseMultiplier = trigger == "Hit" ? 1f : 0.5f;
-
         foreach (var eye in state.Eyes)
         {
             if (eye.CurrentlyHidden) continue;
-
             float angle = (float)(Rng.NextDouble() * Math.PI * 2);
             float strength = (ShakeImpulseMin + (float)(Rng.NextDouble() * (ShakeImpulseMax - ShakeImpulseMin))) * impulseMultiplier;
             eye.IrisVelocity += new Vector2(
@@ -370,7 +313,6 @@ public static class GooglyEyesPatch
             );
         }
     }
-
     [HarmonyPatch("_ExitTree")]
     [HarmonyPostfix]
     static void ExitTree_Postfix(NCreature __instance)
