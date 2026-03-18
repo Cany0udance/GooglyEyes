@@ -1,25 +1,30 @@
 ﻿using System.Text;
 using Godot;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace GooglyEyes;
 
 /// <summary>
-/// Editor tab for placing googly eyes on monster sprites.
+/// Editor tab for placing googly eyes on creature sprites (monsters and characters).
 /// Handles Spine skeleton animations, bone anchoring, timed bone segments, and export.
 /// </summary>
 public class MonsterEditorTab : EditorTab
 {
-    public override string TabName => "Monsters";
-    public override string TabTooltip => "Place googly eyes on monster sprites.";
+    public override string TabName => "Creatures";
+    public override string TabTooltip => "Place googly eyes on monster and character sprites.";
 
     // ── Sidebar ──
     private ScrollContainer _sidebarScroll;
     private VBoxContainer _monsterList;
     private Button _selectedButton;
     private bool _listBuilt;
+    private LineEdit _searchInput;
+    private OptionButton _filterDropdown;
+    private enum FilterMode { All, Configured, Unconfigured }
+    private FilterMode _filterMode = FilterMode.All;
 
     // ── Spine / visuals ──
     private NCreatureVisuals _currentVisuals;
@@ -138,30 +143,131 @@ public class MonsterEditorTab : EditorTab
         if (_listBuilt) return;
         _listBuilt = true;
 
-        foreach (MonsterModel monster in ModelDb.Monsters.OrderBy(m => m.Id.Entry))
+        // ── Monsters ──
+        AddSidebarHeader("Monsters");
+
+        foreach (MonsterModel monster in ModelDb.AllAbstractModelSubtypes
+            .Where(t => t.IsSubclassOf(typeof(MonsterModel)))
+            .Select(t => ModelDb.GetByIdOrNull<MonsterModel>(ModelDb.GetId(t)))
+            .Where(m => m != null)
+            .OrderBy(m => m.Id.Entry))
         {
             var id = monster.Id.Entry;
-            bool hasConfig = GooglyEyesRegistry.Configs.ContainsKey(id);
+            AddCreatureButton(id, () => monster.CreateVisuals());
+        }
 
-            var button = new Button
+        // ── Characters ──
+        AddSidebarHeader("Characters");
+
+        foreach (CharacterModel character in ModelDb.AllCharacters.OrderBy(c => c.Id.Entry))
+        {
+            var id = character.Id.Entry;
+            var charRef = character;
+            AddCreatureButton(id, () => charRef.CreateVisuals());
+        }
+    }
+
+    private void AddCreatureButton(string id, Func<NCreatureVisuals> createVisuals)
+    {
+        bool hasConfig = CreatureGooglyEyesRegistry.Configs.ContainsKey(id);
+
+        var button = new Button
+        {
+            Text = id, Flat = true,
+            Alignment = HorizontalAlignment.Left,
+            CustomMinimumSize = new Vector2(0, 32),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
+        };
+        button.SetMeta("creature_id", id);
+        ApplyFont(button, 14, hasConfig ? EditorTheme.AccentGreen : EditorTheme.TextNormal);
+        button.AddThemeColorOverride("font_hover_color", EditorTheme.TextBright);
+        button.Pressed += () => SelectCreature(id, createVisuals);
+        _monsterList.AddChild(button);
+    }
+
+    private void AddSidebarHeader(string text)
+    {
+        var spacer = new Control { CustomMinimumSize = new Vector2(0, 6) };
+        spacer.SetMeta("section_header", text);
+        _monsterList.AddChild(spacer);
+
+        var header = new Label
+        {
+            Text = text,
+            CustomMinimumSize = new Vector2(0, 24),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
+        };
+        header.SetMeta("section_header", text);
+        ApplyFont(header, 12, EditorTheme.Accent);
+        _monsterList.AddChild(header);
+
+        var divider = new ColorRect
+        {
+            Color = EditorTheme.Divider,
+            CustomMinimumSize = new Vector2(0, 1),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
+        };
+        divider.SetMeta("section_header", text);
+        _monsterList.AddChild(divider);
+    }
+
+    private void RefreshSidebarFilter()
+    {
+        string search = _searchInput.Text?.Trim() ?? "";
+        bool hasSearch = search.Length > 0;
+
+        // Track which sections have at least one visible button
+        string currentSection = null;
+        var sectionHasVisible = new Dictionary<string, bool>();
+
+        // First pass: show/hide buttons
+        foreach (var child in _monsterList.GetChildren())
+        {
+            if (child is not Control ctrl) continue;
+
+            if (ctrl.HasMeta("section_header"))
             {
-                Text = id, Flat = true,
-                Alignment = HorizontalAlignment.Left,
-                CustomMinimumSize = new Vector2(0, 32),
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-            };
-            ApplyFont(button, 14, hasConfig ? EditorTheme.AccentGreen : EditorTheme.TextNormal);
-            button.AddThemeColorOverride("font_hover_color", EditorTheme.TextBright);
+                currentSection = ctrl.GetMeta("section_header").AsString();
+                if (!sectionHasVisible.ContainsKey(currentSection))
+                    sectionHasVisible[currentSection] = false;
+                continue;
+            }
 
-            var monsterRef = monster;
-            button.Pressed += () => SelectMonster(monsterRef, id);
-            _monsterList.AddChild(button);
+            if (child is not Button btn || !btn.HasMeta("creature_id")) continue;
+
+            string id = btn.GetMeta("creature_id").AsString();
+            bool hasConfig = CreatureGooglyEyesRegistry.Configs.ContainsKey(id);
+
+            bool matchesSearch = !hasSearch || id.Contains(search, StringComparison.OrdinalIgnoreCase);
+            bool matchesFilter = _filterMode switch
+            {
+                FilterMode.Configured => hasConfig,
+                FilterMode.Unconfigured => !hasConfig,
+                _ => true
+            };
+
+            bool visible = matchesSearch && matchesFilter;
+            btn.Visible = visible;
+
+            if (visible && currentSection != null)
+                sectionHasVisible[currentSection] = true;
+        }
+
+        // Second pass: show/hide section headers based on whether any buttons in that section are visible
+        foreach (var child in _monsterList.GetChildren())
+        {
+            if (child is not Control ctrl) continue;
+            if (!ctrl.HasMeta("section_header")) continue;
+            string section = ctrl.GetMeta("section_header").AsString();
+            ctrl.Visible = sectionHasVisible.TryGetValue(section, out bool any) && any;
         }
     }
 
     public override void Activate()
     {
         _sidebarScroll.Visible = true;
+        _searchInput.Visible = true;
+        _filterDropdown.Visible = true;
         SetPanelsVisible(true);
         BuildSidebarItems();
     }
@@ -169,6 +275,8 @@ public class MonsterEditorTab : EditorTab
     public override void Deactivate()
     {
         _sidebarScroll.Visible = false;
+        _searchInput.Visible = false;
+        _filterDropdown.Visible = false;
         SetPanelsVisible(false);
         ClearAll();
         ClearBoneMarkers();
@@ -249,10 +357,47 @@ public class MonsterEditorTab : EditorTab
 
     private void BuildSidebarContainer(Vector2 screenSize)
     {
+        float controlsY = 62f;
+
+        // Search input
+        _searchInput = new LineEdit
+        {
+            PlaceholderText = "Search...",
+            Position = new Vector2(4, controlsY),
+            Size = new Vector2(EditorTheme.SidebarWidth - 8, 28),
+            ClearButtonEnabled = true
+        };
+        if (Font != null) _searchInput.AddThemeFontOverride("font", Font);
+        _searchInput.AddThemeFontSizeOverride("font_size", 12);
+        _searchInput.TextChanged += _ => RefreshSidebarFilter();
+        _searchInput.Visible = false;
+        Screen.AddChild(_searchInput);
+
+        // Filter dropdown
+        _filterDropdown = new OptionButton
+        {
+            Position = new Vector2(4, controlsY + 32),
+            Size = new Vector2(EditorTheme.SidebarWidth - 8, 26)
+        };
+        if (Font != null) _filterDropdown.AddThemeFontOverride("font", Font);
+        _filterDropdown.AddThemeFontSizeOverride("font_size", 11);
+        _filterDropdown.AddItem("All");
+        _filterDropdown.AddItem("Configured");
+        _filterDropdown.AddItem("Unconfigured");
+        _filterDropdown.Selected = 0;
+        _filterDropdown.ItemSelected += idx =>
+        {
+            _filterMode = (FilterMode)(int)idx;
+            RefreshSidebarFilter();
+        };
+        _filterDropdown.Visible = false;
+        Screen.AddChild(_filterDropdown);
+
+        float scrollTop = controlsY + 64f;
         _sidebarScroll = new ScrollContainer
         {
-            Position = new Vector2(0, 62),
-            Size = new Vector2(EditorTheme.SidebarWidth, screenSize.Y - 62),
+            Position = new Vector2(0, scrollTop),
+            Size = new Vector2(EditorTheme.SidebarWidth, screenSize.Y - scrollTop),
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
             Visible = false
         };
@@ -473,14 +618,14 @@ public class MonsterEditorTab : EditorTab
     }
 
     // ═══════════════════════════════════════════════
-    //  MONSTER SELECTION
+    //  CREATURE SELECTION
     // ═══════════════════════════════════════════════
 
-    private void SelectMonster(MonsterModel monster, string monsterId)
+    private void SelectCreature(string creatureId, Func<NCreatureVisuals> createVisuals)
     {
         ClearAll();
         ClearBoneMarkers();
-        HighlightButton(monsterId);
+        HighlightButton(creatureId);
 
         _showingBones = false;
         _showBonesButton.Text = "Show Bones";
@@ -488,7 +633,7 @@ public class MonsterEditorTab : EditorTab
         _spineNode = null;
         _animState = null;
         _cachedTrackEntry = null;
-        _currentMonsterId = monsterId;
+        _currentMonsterId = creatureId;
         _isPlaying = false;
         _playPauseButton.Text = "Play";
         _editingSegmentIndex = -1;
@@ -503,7 +648,7 @@ public class MonsterEditorTab : EditorTab
             _currentVisuals = null;
         }
 
-        _currentVisuals = monster.CreateVisuals();
+        _currentVisuals = createVisuals();
         PreviewRoot.AddChild(_currentVisuals);
         _currentVisuals.Position = new Vector2(
             PreviewArea.Size.X / 2,
@@ -526,12 +671,12 @@ public class MonsterEditorTab : EditorTab
             SetAnimationPaused("idle_loop", 0f);
         }
 
-        SetInfo(monsterId + " loaded — click the preview to place eyes!");
+        SetInfo(creatureId + " loaded — click the preview to place eyes!");
         AdvanceWorkflow(WorkflowStep.PlaceEyes);
 
-        if (LoadPresetsForMonster(monsterId))
+        if (LoadPresetsForMonster(creatureId))
         {
-            SetInfo(monsterId + " loaded with " + _placements.Count + " preset eye(s) from registry.");
+            SetInfo(creatureId + " loaded with " + _placements.Count + " preset eye(s) from registry.");
             if (_placements.Count > 0) AdvanceWorkflow(WorkflowStep.AdjustEyes);
         }
         RefreshSegmentUI();
@@ -541,7 +686,7 @@ public class MonsterEditorTab : EditorTab
     {
         if (_selectedButton != null && GodotObject.IsInstanceValid(_selectedButton))
         {
-            bool prev = GooglyEyesRegistry.Configs.ContainsKey(_selectedButton.Text);
+            bool prev = CreatureGooglyEyesRegistry.Configs.ContainsKey(_selectedButton.Text);
             ApplyFont(_selectedButton, 14, prev ? EditorTheme.AccentGreen : EditorTheme.TextNormal);
         }
         foreach (var child in _monsterList.GetChildren())
@@ -838,7 +983,7 @@ public class MonsterEditorTab : EditorTab
 
     private bool LoadPresetsForMonster(string monsterId)
     {
-        if (!GooglyEyesRegistry.Configs.TryGetValue(monsterId, out var configs)) return false;
+        if (!CreatureGooglyEyesRegistry.Configs.TryGetValue(monsterId, out var configs)) return false;
         if (configs.Length == 0 || _skeletonGodot == null || _spineNode == null) return false;
 
         SetAnimationPaused("idle_loop", 0f);
@@ -914,61 +1059,50 @@ public class MonsterEditorTab : EditorTab
     {
         _animDropdown.Clear();
         _availableAnims.Clear();
-        string[] common = {
-            "idle_loop", "hurt", "attack", "cast", "dead", "die", "revive",
-            "idle", "hit", "spawn", "entrance", "taunt",
-            "buff", "debuff", "charge_up", "attack_heavy"
-        };
-        foreach (var name in common)
-        {
-            if (_animController.HasAnimation(name))
-            {
-                _availableAnims.Add(name);
-                _animDropdown.AddItem(name);
-            }
-        }
-        if (_availableAnims.Count > 0) _animDropdown.Selected = 0;
-        PopulateTrack1List();
-    }
-
-    private void PopulateTrack1List()
-    {
         _track1Dropdown.Clear();
         _availableTrack1Anims.Clear();
-        _currentTrack1Anim = "";
 
+        // Track 1 always starts with "(none)"
         _track1Dropdown.AddItem("(none)");
         _availableTrack1Anims.Add("");
 
-        string[] patterns = {
-            "_tracks/charge_up_1", "_tracks/charged_1",
-            "_tracks/charge_up_2", "_tracks/charged_2",
-            "_tracks/charge_up_3", "_tracks/charged_3",
-            "_tracks/charge_up_4", "_tracks/charged_4",
-            "_tracks/charged_0", "_tracks/attack_heavy"
-        };
-        foreach (var p in patterns)
+        if (_animController == null) return;
+
+        var skeleton = _animController.GetSkeleton();
+        if (skeleton == null) return;
+
+        var data = skeleton.GetData();
+        if (data == null) return;
+
+        var bound = data.BoundObject as GodotObject;
+        if (bound != null)
         {
-            if (_animController.HasAnimation(p))
+            var anims = bound.Call("get_animations").AsGodotArray();
+            foreach (var animVariant in anims)
             {
-                _availableTrack1Anims.Add(p);
-                _track1Dropdown.AddItem(p);
+                var anim = animVariant.AsGodotObject();
+                var name = anim.Call("get_name").AsString();
+                if (string.IsNullOrEmpty(name)) continue;
+
+                if (name.Contains("_tracks/"))
+                {
+                    _availableTrack1Anims.Add(name);
+                    _track1Dropdown.AddItem(name);
+                }
+                else
+                {
+                    _availableAnims.Add(name);
+                    _animDropdown.AddItem(name);
+                }
             }
         }
-        for (int i = 1; i <= 10; i++)
+
+        if (_availableAnims.Count > 0)
         {
-            var cu = "_tracks/charge_up_" + i;
-            var cd = "_tracks/charged_" + i;
-            if (!_availableTrack1Anims.Contains(cu) && _animController.HasAnimation(cu))
-            {
-                _availableTrack1Anims.Add(cu);
-                _track1Dropdown.AddItem(cu);
-            }
-            if (!_availableTrack1Anims.Contains(cd) && _animController.HasAnimation(cd))
-            {
-                _availableTrack1Anims.Add(cd);
-                _track1Dropdown.AddItem(cd);
-            }
+            int bestIdx = _availableAnims.IndexOf("idle_loop");
+            if (bestIdx < 0) bestIdx = _availableAnims.FindIndex(n => n.Equals("idle", StringComparison.OrdinalIgnoreCase));
+            if (bestIdx < 0) bestIdx = _availableAnims.FindIndex(n => n.Contains("idle", StringComparison.OrdinalIgnoreCase));
+            _animDropdown.Selected = bestIdx >= 0 ? bestIdx : 0;
         }
         _track1Dropdown.Selected = 0;
     }

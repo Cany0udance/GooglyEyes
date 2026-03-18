@@ -47,10 +47,10 @@ public static class GooglyEyesPatch
     {
         try
         {
-            var monster = __instance.Entity?.Monster;
-            if (monster == null) return;
-            var monsterId = monster.Id.Entry;
-            if (!GooglyEyesRegistry.Configs.TryGetValue(monsterId, out var configs)) return;
+            var creature = __instance.Entity;
+            if (creature == null) return;
+            var creatureId = creature.ModelId.Entry;
+            if (!CreatureGooglyEyesRegistry.Configs.TryGetValue(creatureId, out var configs)) return;
             var spineBody = __instance.Visuals?.SpineBody;
             if (spineBody == null) return;
             var skeleton = spineBody.GetSkeleton();
@@ -118,7 +118,7 @@ public static class GooglyEyesPatch
                     if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
                     UpdateEyes(state);
                 }));
-                GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to " + monsterId);
+                GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to " + creatureId);
             }
         }
         catch (Exception e)
