@@ -130,6 +130,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
         RegisterTab(new MonsterEditorTab());
         RegisterTab(new CardEditorTab());
         RegisterTab(new RelicEditorTab());
+        RegisterTab(new ScreenEditorTab());
     }
 
     private void RegisterTab(EditorTab tab)
