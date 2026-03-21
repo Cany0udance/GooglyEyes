@@ -542,6 +542,7 @@ public partial class NGooglyEyesEditorScreen : NSubmenu
 
     public override void _Input(InputEvent @event)
     {
+        if (!IsVisibleInTree()) return;
         // ── De-focus spinboxes / line edits on outside click ──
         var focus = GetViewport().GuiGetFocusOwner();
         if (focus is SpinBox or LineEdit)

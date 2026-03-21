@@ -111,7 +111,7 @@ public static class CardGooglyEyesPatch
                 {
                     Container = container,
                     IrisWrapper = irisWrapper,
-                    IrisOffset = Vector2.Zero,
+                    IrisOffset = Vector2.Down * maxRadius,
                     IrisVelocity = Vector2.Zero,
                     MaxRadius = maxRadius
                 });

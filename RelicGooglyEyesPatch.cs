@@ -54,9 +54,6 @@ public static class RelicGooglyEyesPatch
             EnsureTextures();
             if (_eyeTexture == null || _irisTexture == null) return;
  
-            // Offsets are authored in icon-pixel space (relative to icon center).
-            // Since all NRelics use the same scene with the same icon size,
-            // no scaling is needed — use offsets and scale directly.
             Vector2 iconCenter = icon.Size / 2f;
  
             float maxRadius = (_eyeSize.X / 2f) - (_irisSize.X / 2f);
@@ -68,11 +65,12 @@ public static class RelicGooglyEyesPatch
                 Relic = __instance
             };
  
+            int eyeIndex = 0;
             foreach (var config in configs)
             {
                 var container = new Control
                 {
-                    Name = "GooglyEye",
+                    Name = $"GooglyEye_{eyeIndex}",
                     Size = Vector2.Zero,
                     Position = iconCenter + config.Offset,
                     Scale = Vector2.One * config.Scale,
@@ -117,10 +115,12 @@ public static class RelicGooglyEyesPatch
                 {
                     Container = container,
                     IrisWrapper = irisWrapper,
-                    IrisOffset = Vector2.Zero,
+                    IrisOffset = Vector2.Down * maxRadius,
                     IrisVelocity = Vector2.Zero,
                     MaxRadius = maxRadius
                 });
+ 
+                eyeIndex++;
             }
  
             icon.AddChild(driver);
@@ -213,6 +213,10 @@ public partial class RelicEyeDriver : Node
     }
 }
  
+// ─────────────────────────────────────────────────────────────────────
+// Inspect screen patches
+// ─────────────────────────────────────────────────────────────────────
+ 
 [HarmonyPatch(typeof(NInspectRelicScreen))]
 public static class RelicInspectGooglyEyesPatch
 {
@@ -235,44 +239,63 @@ public static class RelicInspectGooglyEyesPatch
         }
     }
  
-    [HarmonyPatch("UpdateRelicDisplay")]
-    [HarmonyPostfix]
-    static void UpdateRelicDisplay_Postfix(NInspectRelicScreen __instance,
-        IReadOnlyList<RelicModel> ____relics, int ____index)
+    private static void CleanupRelicImage(TextureRect relicImage)
+    {
+        if (relicImage == null) return;
+ 
+        for (int i = relicImage.GetChildCount() - 1; i >= 0; i--)
+        {
+            var child = relicImage.GetChild(i);
+            var name = child.Name.ToString();
+            if (child is RelicInspectEyeDriver || name.Contains("Googly"))
+            {
+                relicImage.RemoveChild(child);
+                child.QueueFree();
+            }
+        }
+    }
+ 
+    [HarmonyPatch("Open")]
+    [HarmonyPrefix]
+    static void Open_Prefix(NInspectRelicScreen __instance)
     {
         try
         {
-            // Find the relic image TextureRect
+            var relicImage = __instance.GetNode<TextureRect>("%RelicImage");
+            CleanupRelicImage(relicImage);
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr("[GooglyEyes] Open cleanup error: " + e);
+        }
+    }
+ 
+    [HarmonyPatch("UpdateRelicDisplay")]
+    [HarmonyPostfix]
+    static void UpdateRelicDisplay_Postfix(NInspectRelicScreen __instance)
+    {
+        try
+        {
             var relicImage = __instance.GetNode<TextureRect>("%RelicImage");
             if (relicImage == null) return;
  
-            // Clean up previous eyes
-            for (int i = relicImage.GetChildCount() - 1; i >= 0; i--)
-            {
-                var child = relicImage.GetChild(i);
-                var name = child.Name.ToString();
-                if (child is RelicInspectEyeDriver || name.Contains("Googly"))
-                {
-                    relicImage.RemoveChild(child);
-                    child.Free();
-                }
-            }
+            CleanupRelicImage(relicImage);
  
-            if (____relics == null || ____index < 0 || ____index >= ____relics.Count) return;
+            var traverse = Traverse.Create(__instance);
+            var relics = traverse.Field<IReadOnlyList<RelicModel>>("_relics").Value;
+            var index = traverse.Field<int>("_index").Value;
  
-            var relic = ____relics[____index];
+            if (relics == null || index < 0 || index >= relics.Count) return;
+ 
+            var relic = relics[index];
             var relicId = relic.Id.Entry;
             if (!RelicGooglyEyesRegistry.Configs.TryGetValue(relicId, out var configs)) return;
             if (configs.Length == 0) return;
- 
-            // Check if relic is seen (unseen relics are blacked out)
             if (!SaveManager.Instance.IsRelicSeen(relic)) return;
  
             EnsureTextures();
             if (_eyeTexture == null || _irisTexture == null) return;
  
-            // Offsets are authored in icon-pixel space (NRelic icon = 60x60).
-            // Scale to the inspect screen's TextureRect size.
             const float ReferenceIconSize = 60f;
             Vector2 renderedSize = relicImage.Size;
             float sizeRatio = renderedSize.X / ReferenceIconSize;
@@ -287,11 +310,12 @@ public static class RelicInspectGooglyEyesPatch
                 Target = relicImage
             };
  
+            int eyeIndex = 0;
             foreach (var config in configs)
             {
                 var container = new Control
                 {
-                    Name = "GooglyEye",
+                    Name = $"GooglyEye_{eyeIndex}",
                     Size = Vector2.Zero,
                     Position = center + config.Offset * sizeRatio,
                     Scale = Vector2.One * config.Scale * sizeRatio,
@@ -334,10 +358,12 @@ public static class RelicInspectGooglyEyesPatch
                 {
                     Container = container,
                     IrisWrapper = irisWrapper,
-                    IrisOffset = Vector2.Zero,
+                    IrisOffset = Vector2.Down * maxRadius,
                     IrisVelocity = Vector2.Zero,
                     MaxRadius = maxRadius
                 });
+ 
+                eyeIndex++;
             }
  
             relicImage.AddChild(driver);
@@ -376,7 +402,12 @@ public partial class RelicInspectEyeDriver : Node
  
     public override void _Process(double delta)
     {
-        if (!GodotObject.IsInstanceValid(Target)) { QueueFree(); return; }
+        if (!GodotObject.IsInstanceValid(Target))
+        {
+            CleanupEyes();
+            QueueFree();
+            return;
+        }
  
         float dt = (float)delta;
         if (dt <= 0f) return;
@@ -415,4 +446,18 @@ public partial class RelicInspectEyeDriver : Node
             eye.IrisWrapper.Position = eye.IrisOffset;
         }
     }
+ 
+    private void CleanupEyes()
+    {
+        foreach (var eye in Eyes)
+        {
+            if (GodotObject.IsInstanceValid(eye.Container))
+            {
+                eye.Container.GetParent()?.RemoveChild(eye.Container);
+                eye.Container.Free();
+            }
+        }
+        Eyes.Clear();
+    }
 }
+ 

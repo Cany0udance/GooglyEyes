@@ -70,80 +70,81 @@ public static class ScreenGooglyEyesHelper
     }
 
     private static void ApplyStaticEyes(Node sceneRoot, string scenePath, EyeConfig[] configs)
+{
+    Control parent = sceneRoot as Control;
+    if (parent == null)
     {
-        // Static scene: use Control-based nodes so modulate inherits correctly
-        // when the game darkens parent containers via overlays/dialogs.
-        Control parent = sceneRoot as Control;
-        if (parent == null)
-        {
-            // If root is Node2D, try adding to it anyway — modulate works within Node2D trees
-            if (sceneRoot is not Node2D parentNode) return;
-            ApplyStaticEyesNode2D(parentNode, scenePath, configs);
-            return;
-        }
+        if (sceneRoot is not Node2D parentNode) return;
+        ApplyStaticEyesNode2D(parentNode, scenePath, configs);
+        return;
+    }
 
-        Vector2 eyeSize = _eyeTexture.GetSize();
-        Vector2 irisSize = _irisTexture.GetSize();
-        float maxRadius = (eyeSize.X / 2f) - (irisSize.X / 2f);
-        if (maxRadius < 1f) maxRadius = 1f;
+    Vector2 eyeSize = _eyeTexture.GetSize();
+    Vector2 irisSize = _irisTexture.GetSize();
+    float maxRadius = (eyeSize.X / 2f) - (irisSize.X / 2f);
+    if (maxRadius < 1f) maxRadius = 1f;
 
-        var driver = new StaticScreenEyeDriver
+    var driver = new StaticScreenEyeDriver
+    {
+        Name = "GooglyEyeDriver",
+        Target = sceneRoot
+    };
+
+    int eyeIndex = 0;
+    foreach (var config in configs)
+    {
+        var container = new Control
         {
-            Name = "GooglyEyeDriver",
-            Target = sceneRoot
+            Name = $"GooglyEye_{eyeIndex}",
+            Size = Vector2.Zero,
+            Position = config.Offset,
+            Scale = Vector2.One * config.Scale,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
 
-        foreach (var config in configs)
+        if (config.Opacity < 0.99f)
+            container.Modulate = new Color(1f, 1f, 1f, config.Opacity);
+
+        var eyeRect = new TextureRect
         {
-            var container = new Control
-            {
-                Name = "GooglyEye",
-                Size = Vector2.Zero,
-                Position = config.Offset,
-                Scale = Vector2.One * config.Scale,
-                MouseFilter = Control.MouseFilterEnum.Ignore
-            };
-            if (config.Opacity < 0.99f)
-                container.Modulate = new Color(1f, 1f, 1f, config.Opacity);
+            Texture = _eyeTexture, Name = "EyeBacking",
+            Size = eyeSize, Position = -eyeSize / 2f,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
 
-            var eyeRect = new TextureRect
-            {
-                Texture = _eyeTexture, Name = "EyeBacking",
-                Size = eyeSize, Position = -eyeSize / 2f,
-                MouseFilter = Control.MouseFilterEnum.Ignore
-            };
+        var irisWrapper = new Control
+        {
+            Name = "IrisWrapper", Size = Vector2.Zero,
+            Position = Vector2.Zero,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
 
-            var irisWrapper = new Control
-            {
-                Name = "IrisWrapper", Size = Vector2.Zero,
-                Position = Vector2.Zero,
-                MouseFilter = Control.MouseFilterEnum.Ignore
-            };
+        var irisRect = new TextureRect
+        {
+            Texture = _irisTexture, Name = "Iris",
+            Size = irisSize, Position = -irisSize / 2f,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
 
-            var irisRect = new TextureRect
-            {
-                Texture = _irisTexture, Name = "Iris",
-                Size = irisSize, Position = -irisSize / 2f,
-                MouseFilter = Control.MouseFilterEnum.Ignore
-            };
+        irisWrapper.AddChild(irisRect);
+        container.AddChild(eyeRect);
+        container.AddChild(irisWrapper);
+        parent.AddChild(container);
 
-            irisWrapper.AddChild(irisRect);
-            container.AddChild(eyeRect);
-            container.AddChild(irisWrapper);
-            parent.AddChild(container);
+        driver.Eyes.Add(new StaticScreenEyeDriver.EyeData
+        {
+            IrisWrapper = irisWrapper,
+            IrisOffset = Vector2.Down * maxRadius,
+            IrisVelocity = Vector2.Zero,
+            MaxRadius = maxRadius
+        });
 
-            driver.Eyes.Add(new StaticScreenEyeDriver.EyeData
-            {
-                IrisWrapper = irisWrapper,
-                IrisOffset = Vector2.Zero,
-                IrisVelocity = Vector2.Zero,
-                MaxRadius = maxRadius
-            });
-        }
-
-        parent.AddChild(driver);
-        GD.Print("[GooglyEyes] Applied " + configs.Length + " static eyes to screen: " + scenePath);
+        eyeIndex++;
     }
+
+    parent.AddChild(driver);
+    GD.Print("[GooglyEyes] Applied " + configs.Length + " static eyes to screen: " + scenePath);
+}
 
     /// <summary>Fallback for Node2D-rooted static scenes.</summary>
     private static void ApplyStaticEyesNode2D(Node2D parent, string scenePath, EyeConfig[] configs)
@@ -159,19 +160,21 @@ public static class ScreenGooglyEyesHelper
             Target = parent
         };
 
+        int eyeIndex = 0;
         foreach (var config in configs)
         {
             var eyeContainer = new Node2D
             {
-                Name = "GooglyEye", ZIndex = 2,
+                Name = $"GooglyEye_{eyeIndex}",
                 Position = config.Offset,
                 Scale = Vector2.One * config.Scale
             };
+
             if (config.Opacity < 0.99f)
                 eyeContainer.Modulate = new Color(1f, 1f, 1f, config.Opacity);
 
             var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking" };
-            var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris", ZIndex = 1 };
+            var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris" };
 
             eyeContainer.AddChild(eyeSprite);
             eyeContainer.AddChild(irisSprite);
@@ -180,10 +183,12 @@ public static class ScreenGooglyEyesHelper
             driver.Eyes.Add(new StaticScreenEyeDriver.EyeData
             {
                 IrisWrapper = irisSprite,
-                IrisOffset = Vector2.Zero,
+                IrisOffset = Vector2.Down * maxRadius,
                 IrisVelocity = Vector2.Zero,
                 MaxRadius = maxRadius
             });
+
+            eyeIndex++;
         }
 
         parent.AddChild(driver);
@@ -191,90 +196,95 @@ public static class ScreenGooglyEyesHelper
     }
 
     private static void ApplySpineEyes(Node sceneRoot, string scenePath, EyeConfig[] configs, Node spineNode)
+{
+    MegaSprite animController;
+    GodotObject skeletonGodot;
+    Node2D spineNode2D;
+    try
     {
-        MegaSprite animController;
-        GodotObject skeletonGodot;
-        Node2D spineNode2D;
-        try
+        animController = new MegaSprite((Variant)spineNode);
+        var skeleton = animController.GetSkeleton();
+        if (skeleton == null) return;
+        skeletonGodot = skeleton.BoundObject as GodotObject;
+        spineNode2D = animController.BoundObject as Node2D;
+        if (skeletonGodot == null || spineNode2D == null) return;
+    }
+    catch (Exception e)
+    {
+        GD.PrintErr("[GooglyEyes] Failed to init spine for screen: " + e);
+        return;
+    }
+
+    float eyeRadius = _eyeTexture.GetWidth() / 2f;
+    float irisRadius = _irisTexture.GetWidth() / 2f;
+    float maxRadius = eyeRadius - irisRadius;
+    if (maxRadius < 1f) maxRadius = 1f;
+
+    var localEyes = new List<ScreenEyePhysics>();
+
+    int eyeIndex = 0;
+    foreach (var config in configs)
+    {
+        var anchorBone = skeletonGodot.Call("find_bone", config.AnchorBone).AsGodotObject();
+        if (anchorBone == null) continue;
+
+        var eyeContainer = new Node2D
         {
-            animController = new MegaSprite((Variant)spineNode);
-            var skeleton = animController.GetSkeleton();
-            if (skeleton == null) return;
-            skeletonGodot = skeleton.BoundObject as GodotObject;
-            spineNode2D = animController.BoundObject as Node2D;
-            if (skeletonGodot == null || spineNode2D == null) return;
-        }
-        catch (Exception e)
-        {
-            GD.PrintErr("[GooglyEyes] Failed to init spine for screen: " + e);
-            return;
-        }
-
-        float eyeRadius = _eyeTexture.GetWidth() / 2f;
-        float irisRadius = _irisTexture.GetWidth() / 2f;
-        float maxRadius = eyeRadius - irisRadius;
-        if (maxRadius < 1f) maxRadius = 1f;
-
-        var localEyes = new List<ScreenEyePhysics>();
-
-        foreach (var config in configs)
-        {
-            var anchorBone = skeletonGodot.Call("find_bone", config.AnchorBone).AsGodotObject();
-            if (anchorBone == null) continue;
-
-            var eyeContainer = new Node2D();
-            eyeContainer.Name = "GooglyEye";
-            eyeContainer.ZIndex = 2;
-            eyeContainer.Scale = Vector2.One * config.Scale;
-
-            if (config.Opacity < 0.99f)
-                eyeContainer.Modulate = new Color(1f, 1f, 1f, config.Opacity);
-
-            var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking" };
-            var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris", ZIndex = 1 };
-
-            eyeContainer.AddChild(eyeSprite);
-            eyeContainer.AddChild(irisSprite);
-            spineNode2D.AddChild(eyeContainer);
-
-            bool hidden = config.HiddenByDefault;
-            eyeContainer.Visible = !hidden;
-
-            localEyes.Add(new ScreenEyePhysics
-            {
-                AnchorBone = anchorBone,
-                AnchorBoneName = config.AnchorBone,
-                ConfigOffset = config.Offset,
-                ConfigScale = config.Scale,
-                Container = eyeContainer,
-                Iris = irisSprite,
-                MaxRadius = maxRadius,
-                SourceConfig = config,
-                HiddenByDefault = hidden,
-                CurrentlyHidden = hidden,
-                LastResolvedOpacity = config.Opacity
-            });
-        }
-
-        if (localEyes.Count == 0) return;
-
-        var state = new ScreenEyeState
-        {
-            Eyes = localEyes,
-            SkeletonGodot = skeletonGodot,
-            SpineNode = spineNode2D,
-            AnimController = animController
+            Name = $"GooglyEye_{eyeIndex}",
+            Position = config.Offset,
+            Scale = Vector2.One * config.Scale
         };
 
-        // Connect to world_transforms_changed for per-frame updates
-        spineNode2D.Connect("world_transforms_changed", Callable.From<Variant>(arg =>
-        {
-            if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
-            UpdateScreenEyes(state);
-        }));
+        if (config.Opacity < 0.99f)
+            eyeContainer.Modulate = new Color(1f, 1f, 1f, config.Opacity);
 
-        GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to screen: " + scenePath);
+        var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking" };
+        var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris" };
+
+        eyeContainer.AddChild(eyeSprite);
+        eyeContainer.AddChild(irisSprite);
+        spineNode2D.AddChild(eyeContainer);
+
+        bool hidden = config.HiddenByDefault;
+        eyeContainer.Visible = !hidden;
+
+        localEyes.Add(new ScreenEyePhysics
+        {
+            AnchorBone = anchorBone,
+            AnchorBoneName = config.AnchorBone,
+            ConfigOffset = config.Offset,
+            ConfigScale = config.Scale,
+            Container = eyeContainer,
+            Iris = irisSprite,
+            MaxRadius = maxRadius,
+            SourceConfig = config,
+            HiddenByDefault = hidden,
+            CurrentlyHidden = hidden,
+            LastResolvedOpacity = config.Opacity
+        });
+
+        eyeIndex++;
     }
+
+    if (localEyes.Count == 0) return;
+
+    var state = new ScreenEyeState
+    {
+        Eyes = localEyes,
+        SkeletonGodot = skeletonGodot,
+        SpineNode = spineNode2D,
+        AnimController = animController
+    };
+
+    spineNode2D.Connect("world_transforms_changed", Callable.From<Variant>(arg =>
+    {
+        if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
+        UpdateScreenEyes(state);
+    }));
+
+    GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to screen: " + scenePath);
+}
+
 
     private static Node FindSpineSprite(Node root)
     {
@@ -336,9 +346,9 @@ public static class ScreenGooglyEyesHelper
                 eye.CurrentlyHidden = false;
                 eye.Container.Visible = true;
                 eye.Initialized = false;
-                eye.IrisOffset = Vector2.Zero;
+                eye.IrisOffset = Vector2.Down * eye.MaxRadius;
                 eye.IrisVelocity = Vector2.Zero;
-                eye.Iris.Position = Vector2.Zero;
+                eye.Iris.Position = eye.IrisOffset;
             }
 
             // Apply opacity
@@ -354,9 +364,9 @@ public static class ScreenGooglyEyesHelper
                     eye.AnchorBone = newBone;
                     eye.AnchorBoneName = activeBone;
                     eye.Initialized = false;
-                    eye.IrisOffset = Vector2.Zero;
+                    eye.IrisOffset = Vector2.Down * eye.MaxRadius;
                     eye.IrisVelocity = Vector2.Zero;
-                    eye.Iris.Position = Vector2.Zero;
+                    eye.Iris.Position = eye.IrisOffset;
                 }
             }
 

@@ -9,7 +9,8 @@ namespace GooglyEyes;
 
 /// <summary>
 /// Editor tab for placing googly eyes on creature sprites (monsters and characters).
-/// Handles Spine skeleton animations, bone anchoring, timed bone segments, and export.
+/// Handles Spine skeleton animations, bone anchoring, per-animation overrides,
+/// timed bone segments, and export.
 /// </summary>
 public class MonsterEditorTab : EditorTab
 {
@@ -82,6 +83,17 @@ public class MonsterEditorTab : EditorTab
     private Label _activeSegmentLabel;
     private int _editingSegmentIndex = -1;
 
+    // ── Animation override panel ──
+    private CheckBox _overrideCheckbox;
+    private Label _overrideAnimLabel;
+    private Label _overrideInfoLabel;
+    private LineEdit _overrideBoneInput;
+    private CheckBox _overrideVisibleCheckbox;
+    private SpinBox _overrideOpacityInput;
+    private Label _overrideOpacityLabel;
+    private Control _overrideFieldsRow;
+    private Label _overrideHintLabel;
+
     // ── Panel containers (toggled as a unit on tab switch) ──
     private Control _animPanelContainer;
     private Control _bonePanelContainer;
@@ -104,10 +116,26 @@ public class MonsterEditorTab : EditorTab
         public Vector2 SpineOffset;
         public bool HasSpineOffset;
         public bool Hidden;
-        /// <summary>Opacity at the start of this segment (0..1). Lerps to OpacityEnd over the segment duration.</summary>
         public float OpacityStart = 1f;
-        /// <summary>Opacity at the end of this segment (0..1).</summary>
         public float OpacityEnd = 1f;
+    }
+
+    /// <summary>
+    /// Per-animation override for a single eye. Stores how this eye should
+    /// differ from its defaults during a specific animation. Null fields
+    /// mean "use the eye's default."
+    ///
+    /// Time segments live inside the override for the rare case where a
+    /// bone switch is needed mid-animation.
+    /// </summary>
+    private class AnimationOverride
+    {
+        public string BoneName;           // null → use eye default AnchorBone
+        public Vector2 SpineOffset;
+        public bool HasSpineOffset;
+        public bool? Hidden;              // null → use eye default HiddenByDefault
+        public float? Opacity;            // null → use eye default Opacity
+        public List<BoneSegment> Segments = new();
     }
 
     private class EyePlacement
@@ -122,7 +150,7 @@ public class MonsterEditorTab : EditorTab
         public Vector2 SpineOffset;
         public bool HasSpineOffset;
         public bool HiddenByDefault;
-        public Dictionary<string, List<BoneSegment>> BoneTimelines = new();
+        public Dictionary<string, AnimationOverride> AnimOverrides = new();
     }
 
     // ═══════════════════════════════════════════════
@@ -145,20 +173,19 @@ public class MonsterEditorTab : EditorTab
 
         // ── Monsters ──
         AddSidebarHeader("Monsters");
-
         foreach (MonsterModel monster in ModelDb.AllAbstractModelSubtypes
-            .Where(t => t.IsSubclassOf(typeof(MonsterModel)))
-            .Select(t => ModelDb.GetByIdOrNull<MonsterModel>(ModelDb.GetId(t)))
-            .Where(m => m != null)
-            .OrderBy(m => m.Id.Entry))
+                     .Where(t => t.IsSubclassOf(typeof(MonsterModel)))
+                     .Select(t => ModelDb.GetByIdOrNull<MonsterModel>(ModelDb.GetId(t)))
+                     .Where(m => m != null)
+                     .OrderBy(m => m.Id.Entry))
         {
             var id = monster.Id.Entry;
-            AddCreatureButton(id, () => monster.CreateVisuals());
+            var monsterRef = monster;
+            AddCreatureButton(id, () => monsterRef.CreateVisuals(), v => monsterRef.SetupSkins(v));
         }
 
         // ── Characters ──
         AddSidebarHeader("Characters");
-
         foreach (CharacterModel character in ModelDb.AllCharacters.OrderBy(c => c.Id.Entry))
         {
             var id = character.Id.Entry;
@@ -167,10 +194,9 @@ public class MonsterEditorTab : EditorTab
         }
     }
 
-    private void AddCreatureButton(string id, Func<NCreatureVisuals> createVisuals)
+    private void AddCreatureButton(string id, Func<NCreatureVisuals> createVisuals, Action<NCreatureVisuals> postSetup = null)
     {
         bool hasConfig = CreatureGooglyEyesRegistry.Configs.ContainsKey(id);
-
         var button = new Button
         {
             Text = id, Flat = true,
@@ -181,7 +207,7 @@ public class MonsterEditorTab : EditorTab
         button.SetMeta("creature_id", id);
         ApplyFont(button, 14, hasConfig ? EditorTheme.AccentGreen : EditorTheme.TextNormal);
         button.AddThemeColorOverride("font_hover_color", EditorTheme.TextBright);
-        button.Pressed += () => SelectCreature(id, createVisuals);
+        button.Pressed += () => SelectCreature(id, createVisuals, postSetup);
         _monsterList.AddChild(button);
     }
 
@@ -216,15 +242,12 @@ public class MonsterEditorTab : EditorTab
         string search = _searchInput.Text?.Trim() ?? "";
         bool hasSearch = search.Length > 0;
 
-        // Track which sections have at least one visible button
         string currentSection = null;
         var sectionHasVisible = new Dictionary<string, bool>();
 
-        // First pass: show/hide buttons
         foreach (var child in _monsterList.GetChildren())
         {
             if (child is not Control ctrl) continue;
-
             if (ctrl.HasMeta("section_header"))
             {
                 currentSection = ctrl.GetMeta("section_header").AsString();
@@ -232,12 +255,10 @@ public class MonsterEditorTab : EditorTab
                     sectionHasVisible[currentSection] = false;
                 continue;
             }
-
             if (child is not Button btn || !btn.HasMeta("creature_id")) continue;
 
             string id = btn.GetMeta("creature_id").AsString();
             bool hasConfig = CreatureGooglyEyesRegistry.Configs.ContainsKey(id);
-
             bool matchesSearch = !hasSearch || id.Contains(search, StringComparison.OrdinalIgnoreCase);
             bool matchesFilter = _filterMode switch
             {
@@ -245,15 +266,12 @@ public class MonsterEditorTab : EditorTab
                 FilterMode.Unconfigured => !hasConfig,
                 _ => true
             };
-
             bool visible = matchesSearch && matchesFilter;
             btn.Visible = visible;
-
             if (visible && currentSection != null)
                 sectionHasVisible[currentSection] = true;
         }
 
-        // Second pass: show/hide section headers based on whether any buttons in that section are visible
         foreach (var child in _monsterList.GetChildren())
         {
             if (child is not Control ctrl) continue;
@@ -280,7 +298,6 @@ public class MonsterEditorTab : EditorTab
         SetPanelsVisible(false);
         ClearAll();
         ClearBoneMarkers();
-
         if (_currentVisuals != null && GodotObject.IsInstanceValid(_currentVisuals))
         {
             _currentVisuals.QueueFree();
@@ -343,11 +360,12 @@ public class MonsterEditorTab : EditorTab
     {
         get
         {
-            if (_selectedEye == null) return "Click an eye to select it. Adjust scale or duplicate.";
-            int totalSegs = _selectedEye.BoneTimelines.Values.Sum(list => list.Count);
-            return totalSegs > 0
-                ? "This eye has bone segments on " + _selectedEye.BoneTimelines.Count + " animation(s)."
-                : "Drag to reposition. Use Scale to resize.";
+            if (_selectedEye == null)
+                return "Click an eye to select it. Adjust scale or duplicate.";
+            int overrideCount = _selectedEye.AnimOverrides.Count;
+            if (overrideCount > 0)
+                return "This eye has overrides on " + overrideCount + " animation(s).";
+            return "Drag to reposition. Use Scale to resize.";
         }
     }
 
@@ -359,7 +377,6 @@ public class MonsterEditorTab : EditorTab
     {
         float controlsY = 62f;
 
-        // Search input
         _searchInput = new LineEdit
         {
             PlaceholderText = "Search...",
@@ -373,7 +390,6 @@ public class MonsterEditorTab : EditorTab
         _searchInput.Visible = false;
         Screen.AddChild(_searchInput);
 
-        // Filter dropdown
         _filterDropdown = new OptionButton
         {
             Position = new Vector2(4, controlsY + 32),
@@ -478,7 +494,7 @@ public class MonsterEditorTab : EditorTab
             Text = "Hidden by default",
             Position = new Vector2(px + 420, row - 2),
             Size = new Vector2(160, 30),
-            TooltipText = "Eye is invisible unless a non-hidden bone segment makes it appear."
+            TooltipText = "Eye is invisible unless an animation override makes it appear."
         };
         ApplyFont(_hiddenByDefaultCheckbox, 11, EditorTheme.TextNormal);
         _hiddenByDefaultCheckbox.Toggled += pressed =>
@@ -524,22 +540,29 @@ public class MonsterEditorTab : EditorTab
         };
         Screen.AddChild(_bonePanelContainer);
 
-        _bonePanelContainer.AddChild(new ColorRect { Color = EditorTheme.PanelBg, Position = Vector2.Zero, Size = new Vector2(pw, ph) });
+        _bonePanelContainer.AddChild(new ColorRect
+        {
+            Color = EditorTheme.PanelBg, Position = Vector2.Zero, Size = new Vector2(pw, ph)
+        });
 
-        // Title
-        _bonePanelContainer.AddChild(MakeLabel("Bone Anchoring", new Vector2(10, 4), new Vector2(120, 16), 11, EditorTheme.Accent));
-        _anchorPanelHint = MakeLabel("Which bone this eye follows. Most eyes only need the default.",
+        // ── Row 0: Title ──
+        _bonePanelContainer.AddChild(MakeLabel("Bone Anchoring",
+            new Vector2(10, 4), new Vector2(120, 16), 11, EditorTheme.Accent));
+        _anchorPanelHint = MakeLabel("Which bone this eye follows. Override per-animation below.",
             new Vector2(140, 4), new Vector2(pw - 160, 16), 10, EditorTheme.TextDim);
         _bonePanelContainer.AddChild(_anchorPanelHint);
 
-        // Row 2: default bone
-        float row2 = 26;
-        _bonePanelContainer.AddChild(MakeLabel("Default bone:", new Vector2(10, row2 + 3), new Vector2(100, 24), 12, EditorTheme.TextNormal));
+        // ── Row 1: Default bone ──
+        float row1 = 24;
+        _bonePanelContainer.AddChild(MakeLabel("Default bone:",
+            new Vector2(10, row1 + 3), new Vector2(100, 24), 12, EditorTheme.TextNormal));
 
         _anchorBoneInput = new LineEdit
         {
-            Text = "head", Position = new Vector2(112, row2 - 2), Size = new Vector2(130, 30),
-            TooltipText = "The bone this eye follows during idle and any animation without segments."
+            Text = "head",
+            Position = new Vector2(112, row1 - 2),
+            Size = new Vector2(130, 30),
+            TooltipText = "The bone this eye follows when no animation override applies."
         };
         if (Font != null) _anchorBoneInput.AddThemeFontOverride("font", Font);
         _anchorBoneInput.AddThemeFontSizeOverride("font_size", 12);
@@ -550,50 +573,147 @@ public class MonsterEditorTab : EditorTab
         };
         _bonePanelContainer.AddChild(_anchorBoneInput);
 
-        _showBonesButton = MakeButton("Show Bones", new Vector2(255, row2 - 2), new Vector2(105, 30), 11);
+        _showBonesButton = MakeButton("Show Bones", new Vector2(255, row1 - 2), new Vector2(105, 30), 11);
         _showBonesButton.TooltipText = "Show bone markers on the preview.";
         _showBonesButton.Pressed += ToggleBoneMarkers;
         _bonePanelContainer.AddChild(_showBonesButton);
 
         _showAllBoneNamesCheckbox = new CheckBox
         {
-            Text = "All names", Position = new Vector2(370, row2 - 2), Size = new Vector2(100, 30),
+            Text = "All names",
+            Position = new Vector2(370, row1 - 2),
+            Size = new Vector2(100, 30),
             TooltipText = "Label every bone, not just head/face/eye."
         };
         ApplyFont(_showAllBoneNamesCheckbox, 11, EditorTheme.TextNormal);
         _showAllBoneNamesCheckbox.Toggled += _ => { if (_showingBones) RebuildBoneMarkerNodes(); };
         _bonePanelContainer.AddChild(_showAllBoneNamesCheckbox);
 
-        _anchorPosLabel = MakeLabel("", new Vector2(480, row2 + 3), new Vector2(300, 24), 11, EditorTheme.Accent);
+        _anchorPosLabel = MakeLabel("",
+            new Vector2(480, row1 + 3), new Vector2(300, 24), 11, EditorTheme.Accent);
         _bonePanelContainer.AddChild(_anchorPosLabel);
 
-        // Divider
-        float divY = row2 + 34;
-        _bonePanelContainer.AddChild(new ColorRect { Color = EditorTheme.Divider, Position = new Vector2(10, divY), Size = new Vector2(pw - 20, 1) });
+        // ── Divider ──
+        float divY = row1 + 32;
+        _bonePanelContainer.AddChild(new ColorRect
+        {
+            Color = EditorTheme.Divider, Position = new Vector2(10, divY), Size = new Vector2(pw - 20, 1)
+        });
 
-        // Segment header
-        float segHdrY = divY + 6;
-        _bonePanelContainer.AddChild(MakeLabel("Per-animation bone switching", new Vector2(10, segHdrY), new Vector2(220, 16), 11, EditorTheme.AccentWarm));
-        _bonePanelContainer.AddChild(MakeLabel("Only needed if an eye must follow different bones at different times during one animation.",
-            new Vector2(240, segHdrY), new Vector2(pw - 260, 16), 10, EditorTheme.TextDim));
+        // ── Row 2: Animation override header ──
+        float ovY = divY + 6;
+        _overrideAnimLabel = MakeLabel("Animation Override",
+            new Vector2(10, ovY), new Vector2(250, 16), 11, EditorTheme.AccentWarm);
+        _bonePanelContainer.AddChild(_overrideAnimLabel);
+
+        _overrideCheckbox = new CheckBox
+        {
+            Text = "Override for this animation",
+            Position = new Vector2(270, ovY - 3),
+            Size = new Vector2(220, 22),
+            TooltipText = "When checked, this eye uses different settings during this animation."
+        };
+        ApplyFont(_overrideCheckbox, 11, EditorTheme.TextNormal);
+        _overrideCheckbox.Toggled += OnOverrideCheckboxToggled;
+        _bonePanelContainer.AddChild(_overrideCheckbox);
+
+        _overrideInfoLabel = MakeLabel("",
+            new Vector2(500, ovY), new Vector2(pw - 520, 16), 10, EditorTheme.TextDim);
+        _bonePanelContainer.AddChild(_overrideInfoLabel);
+
+        // ── Row 3: Override fields (bone, visible, opacity) ──
+        float fieldsY = ovY + 22;
+        _overrideFieldsRow = new Control
+        {
+            Position = new Vector2(0, fieldsY),
+            Size = new Vector2(pw, 30),
+            Visible = false
+        };
+        _bonePanelContainer.AddChild(_overrideFieldsRow);
+
+        _overrideFieldsRow.AddChild(MakeLabel("Bone:",
+            new Vector2(20, 5), new Vector2(40, 24), 12, EditorTheme.TextNormal));
+
+        _overrideBoneInput = new LineEdit
+        {
+            Text = "head",
+            Position = new Vector2(62, 0),
+            Size = new Vector2(120, 28),
+            TooltipText = "Bone to follow during this animation. Leave blank to use the eye's default."
+        };
+        if (Font != null) _overrideBoneInput.AddThemeFontOverride("font", Font);
+        _overrideBoneInput.AddThemeFontSizeOverride("font_size", 12);
+        _overrideBoneInput.TextChanged += OnOverrideBoneChanged;
+        _overrideFieldsRow.AddChild(_overrideBoneInput);
+
+        _overrideVisibleCheckbox = new CheckBox
+        {
+            Text = "Visible",
+            Position = new Vector2(195, 0),
+            Size = new Vector2(80, 28),
+            ButtonPressed = true,
+            TooltipText = "Whether this eye is visible during this animation."
+        };
+        ApplyFont(_overrideVisibleCheckbox, 11, EditorTheme.TextNormal);
+        _overrideVisibleCheckbox.Toggled += OnOverrideVisibleToggled;
+        _overrideFieldsRow.AddChild(_overrideVisibleCheckbox);
+
+        _overrideOpacityLabel = MakeLabel("Opacity:",
+            new Vector2(285, 5), new Vector2(55, 24), 11, EditorTheme.TextNormal);
+        _overrideFieldsRow.AddChild(_overrideOpacityLabel);
+
+        _overrideOpacityInput = new SpinBox
+        {
+            MinValue = 0.0, MaxValue = 1.0, Step = 0.05, Value = 1.0,
+            Position = new Vector2(340, 0),
+            Size = new Vector2(80, 28),
+            TooltipText = "Eye opacity during this animation."
+        };
+        if (Font != null) _overrideOpacityInput.AddThemeFontOverride("font", Font);
+        _overrideOpacityInput.AddThemeFontSizeOverride("font_size", 11);
+        _overrideOpacityInput.ValueChanged += OnOverrideOpacityChanged;
+        _overrideFieldsRow.AddChild(_overrideOpacityInput);
+
+        _overrideFieldsRow.AddChild(MakeLabel("(drag eye to reposition for this animation)",
+            new Vector2(430, 5), new Vector2(pw - 450, 24), 10, EditorTheme.TextDim));
+
+        _overrideHintLabel = MakeLabel("Select an eye and a non-idle animation to configure overrides.",
+            new Vector2(20, fieldsY + 2), new Vector2(pw - 40, 20), 10, EditorTheme.TextDim);
+        _bonePanelContainer.AddChild(_overrideHintLabel);
+
+        // ── Divider 2 ──
+        float div2Y = fieldsY + 32;
+        _bonePanelContainer.AddChild(new ColorRect
+        {
+            Color = EditorTheme.Divider, Position = new Vector2(10, div2Y), Size = new Vector2(pw - 20, 1)
+        });
+
+        // ── Segment header ──
+        float segHdrY = div2Y + 4;
+        _bonePanelContainer.AddChild(MakeLabel("Time Segments (Advanced)",
+            new Vector2(10, segHdrY), new Vector2(200, 16), 11, EditorTheme.TextDim));
+        _bonePanelContainer.AddChild(MakeLabel(
+            "Split the timeline to switch bones mid-animation. Most eyes don't need this.",
+            new Vector2(220, segHdrY), new Vector2(pw - 240, 16), 10, EditorTheme.TextDim));
 
         // Segment buttons
-        float btnY = segHdrY + 20;
-        _splitHereButton = MakeButton("Split here", new Vector2(10, btnY), new Vector2(100, 26), 11);
+        float btnY = segHdrY + 18;
+        _splitHereButton = MakeButton("Split here", new Vector2(10, btnY), new Vector2(100, 24), 11);
         _splitHereButton.TooltipText = "Split the timeline at the current scrub position.";
         _splitHereButton.Pressed += SplitAtScrubPosition;
         _bonePanelContainer.AddChild(_splitHereButton);
 
-        _clearSegmentsButton = MakeButton("Clear segments", new Vector2(120, btnY), new Vector2(115, 26), 11);
-        _clearSegmentsButton.TooltipText = "Remove all segments for this animation.";
+        _clearSegmentsButton = MakeButton("Clear segments", new Vector2(120, btnY), new Vector2(115, 24), 11);
+        _clearSegmentsButton.TooltipText = "Remove all time segments for this animation (keeps the override).";
         _clearSegmentsButton.Pressed += ClearSegmentsForSelected;
         _bonePanelContainer.AddChild(_clearSegmentsButton);
 
-        _activeSegmentLabel = MakeLabel("", new Vector2(250, btnY + 3), new Vector2(pw - 270, 20), 11, EditorTheme.TextDim);
+        _activeSegmentLabel = MakeLabel("",
+            new Vector2(250, btnY + 3), new Vector2(pw - 270, 20), 11, EditorTheme.TextDim);
         _bonePanelContainer.AddChild(_activeSegmentLabel);
 
         // Scrollable segment list
-        float listY = btnY + 30;
+        float listY = btnY + 27;
         float listH = ph - listY - 4;
         _segmentScroll = new ScrollContainer
         {
@@ -621,12 +741,11 @@ public class MonsterEditorTab : EditorTab
     //  CREATURE SELECTION
     // ═══════════════════════════════════════════════
 
-    private void SelectCreature(string creatureId, Func<NCreatureVisuals> createVisuals)
+    private void SelectCreature(string creatureId, Func<NCreatureVisuals> createVisuals, Action<NCreatureVisuals> postSetup = null)
     {
         ClearAll();
         ClearBoneMarkers();
         HighlightButton(creatureId);
-
         _showingBones = false;
         _showBonesButton.Text = "Show Bones";
         _skeletonGodot = null;
@@ -639,7 +758,6 @@ public class MonsterEditorTab : EditorTab
         _editingSegmentIndex = -1;
         _currentTrack1Anim = "";
         _appliedTrack1Anim = "";
-
         Screen.ResetZoomPan();
 
         if (_currentVisuals != null && GodotObject.IsInstanceValid(_currentVisuals))
@@ -654,6 +772,9 @@ public class MonsterEditorTab : EditorTab
             PreviewArea.Size.X / 2,
             PreviewArea.Size.Y / 2 + _currentVisuals.Bounds.Size.Y * 0.25f
         );
+
+        try { postSetup?.Invoke(_currentVisuals); }
+        catch (Exception e) { GD.PrintErr("[GooglyEyes] SetupSkins error: " + e); }
 
         _availableAnims.Clear();
         _animDropdown.Clear();
@@ -679,6 +800,8 @@ public class MonsterEditorTab : EditorTab
             SetInfo(creatureId + " loaded with " + _placements.Count + " preset eye(s) from registry.");
             if (_placements.Count > 0) AdvanceWorkflow(WorkflowStep.AdjustEyes);
         }
+
+        RefreshOverridePanel();
         RefreshSegmentUI();
     }
 
@@ -732,16 +855,21 @@ public class MonsterEditorTab : EditorTab
                 }
                 return true;
             }
+
             if (mb.ButtonIndex == MouseButton.Left && !mb.Pressed)
             {
                 if (_isDragging && _dragging != null)
                 {
-                    if (_editingSegmentIndex >= 0 && _dragging == _selectedEye
-                        && _selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs)
-                        && _editingSegmentIndex < segs.Count)
+                    if (_editingSegmentIndex >= 0
+                        && _dragging == _selectedEye
+                        && _selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var editOv)
+                        && _editingSegmentIndex < editOv.Segments.Count)
                     {
-                        CacheSegmentOffsetFromCurrentPose(segs[_editingSegmentIndex]);
-                        RefreshSegmentUI();
+                        CacheSegmentOffsetFromCurrentPose(editOv.Segments[_editingSegmentIndex]);
+                    }
+                    else if (_dragging.AnimOverrides.TryGetValue(_currentAnimName, out var dragOv))
+                    {
+                        CacheOverrideOffset(dragOv);
                     }
                     else
                     {
@@ -752,16 +880,19 @@ public class MonsterEditorTab : EditorTab
                 _dragging = null;
                 return true;
             }
+
             if (mb.ButtonIndex == MouseButton.Right && mb.Pressed)
             {
                 var hit = FindEyeAt(contentPos);
                 if (hit != null) { RemoveEye(hit); return true; }
             }
+
             if (mb.ButtonIndex == MouseButton.WheelUp)
             {
                 var hit = FindEyeAt(contentPos);
                 if (hit != null) { ResizeEye(hit, 0.1f); return true; }
             }
+
             if (mb.ButtonIndex == MouseButton.WheelDown)
             {
                 var hit = FindEyeAt(contentPos);
@@ -789,10 +920,11 @@ public class MonsterEditorTab : EditorTab
             SetOutput("Nothing to export.");
             return;
         }
+
         AdvanceWorkflow(WorkflowStep.Export);
         EnsureSkeletonRefs();
-
         float spineScale = _spineNode?.Scale.X ?? 1f;
+
         var sb = new StringBuilder();
         sb.AppendLine("// Googly Eyes config for: " + _currentMonsterId);
         sb.AppendLine("{ \"" + _currentMonsterId + "\", new EyeConfig[] {");
@@ -809,58 +941,127 @@ public class MonsterEditorTab : EditorTab
 
             if (p.Opacity < 0.99f)
                 sb.Append(", Opacity = " + p.Opacity.ToString("F2") + "f");
-
             if (p.HiddenByDefault)
                 sb.Append(", HiddenByDefault = true");
 
-            if (p.BoneTimelines.Count > 0)
+            if (p.AnimOverrides.Count > 0)
             {
                 sb.AppendLine(",");
                 sb.Append("        BoneSegments = new Dictionary<string, BoneSegment[]> {");
-                foreach (var tlKvp in p.BoneTimelines)
+
+                foreach (var ovKvp in p.AnimOverrides)
                 {
-                    if (tlKvp.Value.Count == 0) continue;
+                    var animName = ovKvp.Key;
+                    var ov = ovKvp.Value;
+
                     sb.AppendLine();
-                    sb.Append("            { \"" + tlKvp.Key + "\", new BoneSegment[] {");
-                    foreach (var seg in tlKvp.Value)
+                    sb.Append("            { \"" + animName + "\", new BoneSegment[] {");
+
+                    if (ov.Segments.Count > 0)
                     {
+                        foreach (var seg in ov.Segments)
+                        {
+                            sb.AppendLine();
+                            sb.Append("                new BoneSegment { ");
+                            sb.Append("StartTime = " + seg.StartTime.ToString("F2") + "f, ");
+                            sb.Append("EndTime = " + seg.EndTime.ToString("F2") + "f, ");
+                            EmitSegmentFields(sb, seg);
+                            sb.Append(" },");
+                        }
+                    }
+                    else
+                    {
+                        // Whole-animation override → single segment spanning full duration
+                        float duration = GetAnimDuration(animName);
                         sb.AppendLine();
                         sb.Append("                new BoneSegment { ");
-                        sb.Append("StartTime = " + seg.StartTime.ToString("F2") + "f, ");
-                        sb.Append("EndTime = " + seg.EndTime.ToString("F2") + "f, ");
-                        if (seg.Hidden)
+                        sb.Append("StartTime = 0.00f, ");
+                        sb.Append("EndTime = " + duration.ToString("F2") + "f, ");
+
+                        bool hidden = ov.Hidden ?? p.HiddenByDefault;
+                        if (hidden)
                         {
                             sb.Append("Hidden = true");
                         }
                         else
                         {
-                            var segOff = seg.HasSpineOffset ? seg.SpineOffset : Vector2.Zero;
-                            sb.Append("BoneName = \"" + seg.BoneName + "\", ");
+                            string bone = ov.BoneName ?? p.AnchorBone;
+                            var segOff = ov.HasSpineOffset ? ov.SpineOffset : Vector2.Zero;
+                            sb.Append("BoneName = \"" + bone + "\", ");
                             sb.Append("Offset = new Vector2(" + segOff.X.ToString("F1") + "f, " + segOff.Y.ToString("F1") + "f)");
-                            if (seg.OpacityStart < 0.99f || seg.OpacityEnd < 0.99f)
+                            float opacity = ov.Opacity ?? p.Opacity;
+                            if (opacity < 0.99f)
                             {
-                                sb.Append(", OpacityStart = " + seg.OpacityStart.ToString("F2") + "f");
-                                sb.Append(", OpacityEnd = " + seg.OpacityEnd.ToString("F2") + "f");
+                                sb.Append(", OpacityStart = " + opacity.ToString("F2") + "f");
+                                sb.Append(", OpacityEnd = " + opacity.ToString("F2") + "f");
                             }
                         }
                         sb.Append(" },");
                     }
+
                     sb.AppendLine();
                     sb.Append("            } },");
                 }
+
                 sb.AppendLine();
                 sb.Append("        }");
             }
+
             sb.AppendLine(" },");
         }
-        sb.AppendLine("}},");
 
+        sb.AppendLine("}},");
         GD.Print("[GooglyEyes] === EXPORT ===");
         GD.Print(sb.ToString());
         GD.Print("[GooglyEyes] === END EXPORT ===");
 
-        int totalSegs = _placements.Sum(p => p.BoneTimelines.Values.Sum(l => l.Count));
-        SetOutput("Exported " + _placements.Count + " eye(s), " + totalSegs + " segment(s) — check console!");
+        int totalOverrides = _placements.Sum(p => p.AnimOverrides.Count);
+        int totalSegs = _placements.Sum(p => p.AnimOverrides.Values.Sum(ov => ov.Segments.Count));
+        SetOutput("Exported " + _placements.Count + " eye(s), "
+            + totalOverrides + " override(s), "
+            + totalSegs + " segment(s) — check console!");
+    }
+
+    /// <summary>Helper: emits the fields for a single BoneSegment in the export.</summary>
+    private void EmitSegmentFields(StringBuilder sb, BoneSegment seg)
+    {
+        if (seg.Hidden)
+        {
+            sb.Append("Hidden = true");
+        }
+        else
+        {
+            var segOff = seg.HasSpineOffset ? seg.SpineOffset : Vector2.Zero;
+            sb.Append("BoneName = \"" + seg.BoneName + "\", ");
+            sb.Append("Offset = new Vector2(" + segOff.X.ToString("F1") + "f, " + segOff.Y.ToString("F1") + "f)");
+            if (seg.OpacityStart < 0.99f || seg.OpacityEnd < 0.99f)
+            {
+                sb.Append(", OpacityStart = " + seg.OpacityStart.ToString("F2") + "f");
+                sb.Append(", OpacityEnd = " + seg.OpacityEnd.ToString("F2") + "f");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Looks up the duration of a named animation from the skeleton data.
+    /// Used at export time for whole-animation overrides.
+    /// </summary>
+    private float GetAnimDuration(string animName)
+    {
+        if (_animController == null) return 1f;
+        var skeleton = _animController.GetSkeleton();
+        var data = skeleton?.GetData();
+        var bound = data?.BoundObject as GodotObject;
+        if (bound == null) return 1f;
+
+        var anims = bound.Call("get_animations").AsGodotArray();
+        foreach (var animVariant in anims)
+        {
+            var anim = animVariant.AsGodotObject();
+            if (anim.Call("get_name").AsString() == animName)
+                return (float)anim.Call("get_duration");
+        }
+        return 1f;
     }
 
     public override void ClearAll()
@@ -880,6 +1081,7 @@ public class MonsterEditorTab : EditorTab
     {
         if (_selectedEye == null) return;
         PlaceEye(_selectedEye.Position + new Vector2(30, 30));
+
         var n = _placements[^1];
         n.Scale = _selectedEye.Scale;
         n.Opacity = _selectedEye.Opacity;
@@ -887,16 +1089,31 @@ public class MonsterEditorTab : EditorTab
         n.HiddenByDefault = _selectedEye.HiddenByDefault;
         n.Container.Scale = Vector2.One * n.Scale;
         n.Container.Modulate = new Color(1, 1, 1, n.Opacity);
-        foreach (var kvp in _selectedEye.BoneTimelines)
+
+        foreach (var kvp in _selectedEye.AnimOverrides)
         {
-            n.BoneTimelines[kvp.Key] = kvp.Value.Select(s => new BoneSegment
+            var srcOv = kvp.Value;
+            var newOv = new AnimationOverride
             {
-                StartTime = s.StartTime, EndTime = s.EndTime,
-                BoneName = s.BoneName, SpineOffset = s.SpineOffset,
-                HasSpineOffset = s.HasSpineOffset, Hidden = s.Hidden,
-                OpacityStart = s.OpacityStart, OpacityEnd = s.OpacityEnd
-            }).ToList();
+                BoneName = srcOv.BoneName,
+                SpineOffset = srcOv.SpineOffset,
+                HasSpineOffset = srcOv.HasSpineOffset,
+                Hidden = srcOv.Hidden,
+                Opacity = srcOv.Opacity
+            };
+            foreach (var seg in srcOv.Segments)
+            {
+                newOv.Segments.Add(new BoneSegment
+                {
+                    StartTime = seg.StartTime, EndTime = seg.EndTime,
+                    BoneName = seg.BoneName, SpineOffset = seg.SpineOffset,
+                    HasSpineOffset = seg.HasSpineOffset, Hidden = seg.Hidden,
+                    OpacityStart = seg.OpacityStart, OpacityEnd = seg.OpacityEnd
+                });
+            }
+            n.AnimOverrides[kvp.Key] = newOv;
         }
+
         SelectEye(n);
     }
 
@@ -914,6 +1131,7 @@ public class MonsterEditorTab : EditorTab
         _hiddenByDefaultCheckbox.SetPressedNoSignal(false);
         _opacityInput.SetValueNoSignal(1.0);
         Screen.RefreshSelectionPanel();
+        RefreshOverridePanel();
         RefreshSegmentUI();
     }
 
@@ -974,6 +1192,7 @@ public class MonsterEditorTab : EditorTab
         _opacityInput.SetValueNoSignal(eye.Opacity);
         _editingSegmentIndex = -1;
         Screen.RefreshSelectionPanel();
+        RefreshOverridePanel();
         RefreshSegmentUI();
     }
 
@@ -1003,10 +1222,9 @@ public class MonsterEditorTab : EditorTab
             var bonePreviewPos = SpineToPreview(new Vector2(bx, by));
             var rotatedOffset = RotateByBone(config.Offset, anchorBone);
             var previewPos = bonePreviewPos + rotatedOffset * _spineNode.Scale;
-
             float editorScale = config.Scale * spineScale;
-            var container = CreateEyeContainer(previewPos, editorScale);
 
+            var container = CreateEyeContainer(previewPos, editorScale);
             var placement = new EyePlacement
             {
                 Position = previewPos, Scale = editorScale,
@@ -1024,30 +1242,63 @@ public class MonsterEditorTab : EditorTab
             else if (config.Opacity < 0.99f)
                 container.Modulate = new Color(1, 1, 1, config.Opacity);
 
+            // ── Convert old BoneSegments → AnimOverrides ──
             if (config.BoneSegments != null)
             {
                 foreach (var kvp in config.BoneSegments)
                 {
                     if (kvp.Value == null || kvp.Value.Length == 0) continue;
-                    var editorSegs = new List<BoneSegment>();
-                    foreach (var src in kvp.Value)
+
+                    var ov = new AnimationOverride();
+
+                    // Check if this is a single full-span segment (whole-animation override)
+                    float animDur = GetAnimDuration(kvp.Key);
+                    bool isSingleFullSpan = kvp.Value.Length == 1
+                        && kvp.Value[0].StartTime <= 0.01f
+                        && kvp.Value[0].EndTime >= animDur - 0.1f;
+
+                    if (isSingleFullSpan)
                     {
-                        var seg = new BoneSegment
+                        // Convert to a clean override with no time segments
+                        var src = kvp.Value[0];
+                        ov.Hidden = src.Hidden;
+                        if (!src.Hidden)
                         {
-                            StartTime = src.StartTime, EndTime = src.EndTime,
-                            BoneName = src.BoneName ?? config.AnchorBone,
-                            Hidden = src.Hidden,
-                            OpacityStart = src.OpacityStart,
-                            OpacityEnd = src.OpacityEnd
-                        };
-                        if (!src.Hidden) { seg.SpineOffset = src.Offset; seg.HasSpineOffset = true; }
-                        editorSegs.Add(seg);
+                            ov.BoneName = src.BoneName ?? config.AnchorBone;
+                            ov.SpineOffset = src.Offset;
+                            ov.HasSpineOffset = true;
+                            ov.Opacity = (src.OpacityStart + src.OpacityEnd) / 2f;
+                        }
                     }
-                    placement.BoneTimelines[kvp.Key] = editorSegs;
+                    else
+                    {
+                        // Multiple segments → keep them, infer override from first
+                        var first = kvp.Value[0];
+                        ov.BoneName = first.BoneName ?? config.AnchorBone;
+                        ov.Hidden = first.Hidden;
+
+                        foreach (var src in kvp.Value)
+                        {
+                            var seg = new BoneSegment
+                            {
+                                StartTime = src.StartTime, EndTime = src.EndTime,
+                                BoneName = src.BoneName ?? config.AnchorBone,
+                                Hidden = src.Hidden,
+                                OpacityStart = src.OpacityStart,
+                                OpacityEnd = src.OpacityEnd
+                            };
+                            if (!src.Hidden) { seg.SpineOffset = src.Offset; seg.HasSpineOffset = true; }
+                            ov.Segments.Add(seg);
+                        }
+                    }
+
+                    placement.AnimOverrides[kvp.Key] = ov;
                 }
             }
+
             _placements.Add(placement);
         }
+
         return _placements.Count > 0;
     }
 
@@ -1062,19 +1313,16 @@ public class MonsterEditorTab : EditorTab
         _track1Dropdown.Clear();
         _availableTrack1Anims.Clear();
 
-        // Track 1 always starts with "(none)"
         _track1Dropdown.AddItem("(none)");
         _availableTrack1Anims.Add("");
 
         if (_animController == null) return;
-
         var skeleton = _animController.GetSkeleton();
         if (skeleton == null) return;
-
         var data = skeleton.GetData();
         if (data == null) return;
-
         var bound = data.BoundObject as GodotObject;
+
         if (bound != null)
         {
             var anims = bound.Call("get_animations").AsGodotArray();
@@ -1114,6 +1362,7 @@ public class MonsterEditorTab : EditorTab
         _playPauseButton.Text = "Play";
         _editingSegmentIndex = -1;
         SetAnimationPaused(_availableAnims[(int)index], 0f);
+        RefreshOverridePanel();
         RefreshSegmentUI();
     }
 
@@ -1135,6 +1384,7 @@ public class MonsterEditorTab : EditorTab
             try { _animState.AddEmptyAnimation(1); } catch { /* ignored */ }
             return;
         }
+
         var entry = _animState.SetAnimation(_currentTrack1Anim, true, 1);
         entry?.SetTimeScale(_isPlaying ? 1f : 0f);
     }
@@ -1177,9 +1427,9 @@ public class MonsterEditorTab : EditorTab
 
         var entry = _animState.SetAnimation(animName, false);
         if (entry == null) return;
+
         _cachedTrackEntry = entry;
         entry.SetTimeScale(0f);
-
         float duration = entry.GetAnimationEnd();
         float time = normalizedTime * duration;
         entry.SetTrackTime(time);
@@ -1194,6 +1444,7 @@ public class MonsterEditorTab : EditorTab
     {
         if (_animController == null) return;
         _animState ??= _animController.GetAnimationState();
+
         var entry = _animState.SetAnimation(animName, false);
         if (entry == null) return;
         entry.SetTimeScale(0f);
@@ -1203,7 +1454,96 @@ public class MonsterEditorTab : EditorTab
     }
 
     private float GetCurrentAnimDuration() => _cachedTrackEntry?.GetAnimationEnd() ?? 0f;
+
     private float GetCurrentScrubTime() => (float)(_frameSlider.Value / 100.0) * GetCurrentAnimDuration();
+
+    // ═══════════════════════════════════════════════
+    //  RESOLVE METHODS
+    // ═══════════════════════════════════════════════
+
+    private string ResolveActiveBone(EyePlacement p, string anim, float time)
+    {
+        if (!p.AnimOverrides.TryGetValue(anim, out var ov))
+            return p.AnchorBone;
+
+        if (ov.Segments.Count > 0)
+        {
+            foreach (var s in ov.Segments)
+                if (time >= s.StartTime && time < s.EndTime)
+                    return s.BoneName;
+            return ov.Segments[^1].BoneName;
+        }
+
+        return ov.BoneName ?? p.AnchorBone;
+    }
+
+    private bool ResolveHidden(EyePlacement p, string anim, float time)
+    {
+        if (!p.AnimOverrides.TryGetValue(anim, out var ov))
+            return p.HiddenByDefault;
+
+        if (ov.Segments.Count > 0)
+        {
+            foreach (var s in ov.Segments)
+                if (time >= s.StartTime && time < s.EndTime)
+                    return s.Hidden;
+            return ov.Segments[^1].Hidden;
+        }
+
+        return ov.Hidden ?? p.HiddenByDefault;
+    }
+
+    private Vector2 ResolveSpineOffset(EyePlacement p, string anim, float time)
+    {
+        if (!p.AnimOverrides.TryGetValue(anim, out var ov))
+            return p.HasSpineOffset ? p.SpineOffset : Vector2.Zero;
+
+        if (ov.Segments.Count > 0)
+        {
+            foreach (var s in ov.Segments)
+            {
+                if (time >= s.StartTime && time < s.EndTime)
+                    return s.HasSpineOffset ? s.SpineOffset
+                         : ov.HasSpineOffset ? ov.SpineOffset
+                         : p.HasSpineOffset  ? p.SpineOffset
+                         : Vector2.Zero;
+            }
+            var last = ov.Segments[^1];
+            return last.HasSpineOffset ? last.SpineOffset
+                 : ov.HasSpineOffset   ? ov.SpineOffset
+                 : p.HasSpineOffset    ? p.SpineOffset
+                 : Vector2.Zero;
+        }
+
+        return ov.HasSpineOffset ? ov.SpineOffset
+             : p.HasSpineOffset  ? p.SpineOffset
+             : Vector2.Zero;
+    }
+
+    private float ResolveOpacity(EyePlacement p, string anim, float time)
+    {
+        if (!p.AnimOverrides.TryGetValue(anim, out var ov))
+            return p.Opacity;
+
+        if (ov.Segments.Count > 0)
+        {
+            foreach (var s in ov.Segments)
+            {
+                if (time >= s.StartTime && time < s.EndTime)
+                {
+                    if (s.Hidden) return 0f;
+                    float segDur = s.EndTime - s.StartTime;
+                    if (segDur <= 0f) return s.OpacityStart;
+                    float t = (time - s.StartTime) / segDur;
+                    return Mathf.Lerp(s.OpacityStart, s.OpacityEnd, t);
+                }
+            }
+            var last = ov.Segments[^1];
+            return last.Hidden ? 0f : last.OpacityEnd;
+        }
+
+        return ov.Opacity ?? p.Opacity;
+    }
 
     // ═══════════════════════════════════════════════
     //  EYE POSITION TRACKING
@@ -1216,7 +1556,6 @@ public class MonsterEditorTab : EditorTab
 
         float dur = _cachedTrackEntry.GetAnimationEnd();
         float currentTime = dur > 0f ? _cachedTrackEntry.GetTrackTime() % dur : 0f;
-
         UpdateActiveSegmentLabel(currentTime);
 
         foreach (var p in _placements)
@@ -1226,21 +1565,19 @@ public class MonsterEditorTab : EditorTab
 
             bool shouldHide = ResolveHidden(p, _currentAnimName, currentTime);
             if (shouldHide)
-            {
                 p.Container.Modulate = new Color(1, 1, 1, 0.15f);
-                continue;
-            }
-            p.Container.Modulate = p.HiddenByDefault
-                ? new Color(1, 1, 1, 0.7f)
-                : new Color(1, 1, 1, ResolveOpacity(p, _currentAnimName, currentTime));
+            else if (p.HiddenByDefault)
+                p.Container.Modulate = new Color(1, 1, 1, 0.7f);
+            else
+                p.Container.Modulate = new Color(1, 1, 1, ResolveOpacity(p, _currentAnimName, currentTime));
 
             string activeBone = ResolveActiveBone(p, _currentAnimName, currentTime);
             var bone = _skeletonGodot.Call("find_bone", activeBone).AsGodotObject();
             if (bone == null) continue;
 
             var bonePos = new Vector2((float)bone.Call("get_world_x"), (float)bone.Call("get_world_y"));
-            var offset = ResolveSpineOffset(p, _currentAnimName, currentTime);
-            var rotated = RotateByBone(offset, bone);
+            var spineOffset = ResolveSpineOffset(p, _currentAnimName, currentTime);
+            var rotated = RotateByBone(spineOffset, bone);
             var previewPos = SpineToPreview(bonePos) + rotated * _spineNode.Scale;
 
             p.Container.Position = previewPos;
@@ -1248,66 +1585,120 @@ public class MonsterEditorTab : EditorTab
         }
     }
 
-    private string ResolveActiveBone(EyePlacement p, string anim, float time)
+    // ═══════════════════════════════════════════════
+    //  OVERRIDE PANEL CALLBACKS
+    // ═══════════════════════════════════════════════
+
+    private void OnOverrideCheckboxToggled(bool pressed)
     {
-        if (p.BoneTimelines.TryGetValue(anim, out var segs) && segs.Count > 0)
+        if (_selectedEye == null) return;
+
+        if (pressed)
         {
-            foreach (var s in segs)
-                if (time >= s.StartTime && time < s.EndTime) return s.BoneName;
-            return segs[^1].BoneName;
+            if (!_selectedEye.AnimOverrides.ContainsKey(_currentAnimName))
+            {
+                var ov = new AnimationOverride
+                {
+                    BoneName = _selectedEye.AnchorBone,
+                    Hidden = _selectedEye.HiddenByDefault,
+                    Opacity = _selectedEye.Opacity
+                };
+                _selectedEye.AnimOverrides[_currentAnimName] = ov;
+                CacheOverrideOffset(ov);
+            }
         }
-        return p.AnchorBone;
+        else
+        {
+            _selectedEye.AnimOverrides.Remove(_currentAnimName);
+            _editingSegmentIndex = -1;
+        }
+
+        RefreshOverridePanel();
+        RefreshSegmentUI();
+        Screen.RefreshSelectionPanel();
     }
 
-    private Vector2 ResolveSpineOffset(EyePlacement p, string anim, float time)
+    private void OnOverrideBoneChanged(string text)
     {
-        if (p.BoneTimelines.TryGetValue(anim, out var segs) && segs.Count > 0)
-        {
-            foreach (var s in segs)
-                if (time >= s.StartTime && time < s.EndTime)
-                    return s.HasSpineOffset ? s.SpineOffset : p.SpineOffset;
-            var last = segs[^1];
-            return last.HasSpineOffset ? last.SpineOffset : p.SpineOffset;
-        }
-        return p.HasSpineOffset ? p.SpineOffset : Vector2.Zero;
+        if (_selectedEye == null) return;
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)) return;
+        ov.BoneName = string.IsNullOrWhiteSpace(text) ? null : text;
     }
 
-    private bool ResolveHidden(EyePlacement p, string anim, float time)
+    private void OnOverrideVisibleToggled(bool pressed)
     {
-        if (p.BoneTimelines.TryGetValue(anim, out var segs) && segs.Count > 0)
-        {
-            foreach (var s in segs)
-                if (time >= s.StartTime && time < s.EndTime) return s.Hidden;
-            return segs[^1].Hidden;
-        }
-        return p.HiddenByDefault;
+        if (_selectedEye == null) return;
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)) return;
+        ov.Hidden = !pressed;
     }
+
+    private void OnOverrideOpacityChanged(double value)
+    {
+        if (_selectedEye == null) return;
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)) return;
+        ov.Opacity = (float)value;
+    }
+
+    // ═══════════════════════════════════════════════
+    //  OVERRIDE PANEL REFRESH
+    // ═══════════════════════════════════════════════
 
     /// <summary>
-    /// Resolves the opacity for an eye at the given time.
-    /// If a segment is active and not hidden, lerps between OpacityStart and OpacityEnd.
-    /// Otherwise uses the eye's base Opacity.
+    /// Updates the override section of the bone panel based on the
+    /// currently selected eye and animation.
     /// </summary>
-    private float ResolveOpacity(EyePlacement p, string anim, float time)
+    private void RefreshOverridePanel()
     {
-        if (p.BoneTimelines.TryGetValue(anim, out var segs) && segs.Count > 0)
+        bool hasEye = _selectedEye != null;
+        bool hasAnim = !string.IsNullOrEmpty(_currentAnimName);
+
+        _overrideAnimLabel.Text = hasAnim
+            ? "Animation Override: " + _currentAnimName
+            : "Animation Override";
+
+        if (!hasEye || !hasAnim)
         {
-            foreach (var s in segs)
-            {
-                if (time >= s.StartTime && time < s.EndTime)
-                {
-                    if (s.Hidden) return 0f;
-                    float segDur = s.EndTime - s.StartTime;
-                    if (segDur <= 0f) return s.OpacityStart;
-                    float t = (time - s.StartTime) / segDur;
-                    return Mathf.Lerp(s.OpacityStart, s.OpacityEnd, t);
-                }
-            }
-            // Past all segments: use last segment's end opacity
-            var last = segs[^1];
-            return last.Hidden ? 0f : last.OpacityEnd;
+            _overrideCheckbox.Visible = false;
+            _overrideFieldsRow.Visible = false;
+            _overrideHintLabel.Visible = true;
+            _overrideHintLabel.Text = "Select an eye and an animation to configure overrides.";
+            _overrideInfoLabel.Text = "";
+            _splitHereButton.Disabled = true;
+            _clearSegmentsButton.Disabled = true;
+            return;
         }
-        return p.Opacity;
+
+        _overrideCheckbox.Visible = true;
+        bool hasOverride = _selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov);
+
+        _overrideCheckbox.SetPressedNoSignal(hasOverride);
+
+        if (hasOverride)
+        {
+            _overrideFieldsRow.Visible = true;
+            _overrideHintLabel.Visible = false;
+            _overrideBoneInput.Text = ov.BoneName ?? _selectedEye.AnchorBone;
+            _overrideVisibleCheckbox.SetPressedNoSignal(!(ov.Hidden ?? false));
+            _overrideOpacityInput.SetValueNoSignal(ov.Opacity ?? _selectedEye.Opacity);
+            _splitHereButton.Disabled = false;
+            _clearSegmentsButton.Disabled = ov.Segments.Count == 0;
+
+            int segCount = ov.Segments.Count;
+            _overrideInfoLabel.Text = segCount > 0
+                ? segCount + " time segment(s)"
+                : "whole-animation override";
+        }
+        else
+        {
+            _overrideFieldsRow.Visible = false;
+            _overrideHintLabel.Visible = true;
+            _overrideHintLabel.Text = "No override — eye uses defaults (bone: "
+                + _selectedEye.AnchorBone
+                + ", " + (_selectedEye.HiddenByDefault ? "hidden" : "visible") + ").";
+            _overrideInfoLabel.Text = "";
+            _splitHereButton.Disabled = true;
+            _clearSegmentsButton.Disabled = true;
+        }
     }
 
     // ═══════════════════════════════════════════════
@@ -1484,9 +1875,32 @@ public class MonsterEditorTab : EditorTab
         if (_skeletonGodot == null || string.IsNullOrEmpty(p.AnchorBone)) return Vector2.Zero;
         var bone = _skeletonGodot.Call("find_bone", p.AnchorBone).AsGodotObject();
         if (bone == null) { SetOutput("Bone '" + p.AnchorBone + "' not found!"); return null; }
-
         var bonePreview = SpineToPreview(new Vector2((float)bone.Call("get_world_x"), (float)bone.Call("get_world_y")));
         return UnrotateByBone((p.Position - bonePreview) / _spineNode.Scale, bone);
+    }
+
+    /// <summary>
+    /// Caches the spine-space offset for an animation override,
+    /// based on the eye's current preview position and the override's bone.
+    /// </summary>
+    private void CacheOverrideOffset(AnimationOverride ov)
+    {
+        if (_selectedEye == null || _skeletonGodot == null || _spineNode == null)
+        {
+            ov.HasSpineOffset = false;
+            return;
+        }
+
+        string boneName = ov.BoneName ?? _selectedEye.AnchorBone;
+        var bone = _skeletonGodot.Call("find_bone", boneName).AsGodotObject();
+        if (bone == null) { ov.HasSpineOffset = false; return; }
+
+        var bonePreview = SpineToPreview(new Vector2(
+            (float)bone.Call("get_world_x"),
+            (float)bone.Call("get_world_y")));
+        var worldOffset = (_selectedEye.Position - bonePreview) / _spineNode.Scale;
+        ov.SpineOffset = UnrotateByBone(worldOffset, bone);
+        ov.HasSpineOffset = true;
     }
 
     // ═══════════════════════════════════════════════
@@ -1496,12 +1910,17 @@ public class MonsterEditorTab : EditorTab
     private void UpdateActiveSegmentLabel(float time)
     {
         if (_selectedEye == null || _activeSegmentLabel == null) return;
-        if (!_selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs) || segs.Count == 0)
+
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov) || ov.Segments.Count == 0)
         {
-            _activeSegmentLabel.Text = "";
+            if (ov != null)
+                _activeSegmentLabel.Text = "override active (no segments)";
+            else
+                _activeSegmentLabel.Text = "";
             return;
         }
 
+        var segs = ov.Segments;
         for (int i = 0; i < segs.Count; i++)
         {
             if (time < segs[i].StartTime || time >= segs[i].EndTime) continue;
@@ -1525,7 +1944,7 @@ public class MonsterEditorTab : EditorTab
                 }
                 _activeSegmentLabel.Text = "@ " + time.ToString("F2") + "s → segment " + (i + 1)
                     + " (" + seg.BoneName + ", visible" + opacityInfo + ")"
-                    + (isEditing ? "  ← EDITING (drag eye to reposition)" : "");
+                    + (isEditing ? "  ← EDITING" : "");
                 ApplyFont(_activeSegmentLabel, 11, isEditing ? EditorTheme.AccentWarm : EditorTheme.AccentGreen);
             }
             return;
@@ -1538,16 +1957,26 @@ public class MonsterEditorTab : EditorTab
     private void SplitAtScrubPosition()
     {
         if (_selectedEye == null) { SetOutput("Select an eye first."); return; }
-        if (_currentAnimName == "idle_loop") { SetOutput("Switch to a non-idle animation first."); return; }
 
+        // Ensure an override exists (auto-create one if needed)
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov))
+        {
+            ov = new AnimationOverride
+            {
+                BoneName = _selectedEye.AnchorBone,
+                Hidden = _selectedEye.HiddenByDefault,
+                Opacity = _selectedEye.Opacity
+            };
+            CacheOverrideOffset(ov);
+            _selectedEye.AnimOverrides[_currentAnimName] = ov;
+            _overrideCheckbox.SetPressedNoSignal(true);
+            RefreshOverridePanel();
+        }
+
+        var segments = ov.Segments;
         float duration = GetCurrentAnimDuration();
         if (duration <= 0f) return;
         float splitTime = GetCurrentScrubTime();
-
-        if (!_selectedEye.BoneTimelines.ContainsKey(_currentAnimName))
-            _selectedEye.BoneTimelines[_currentAnimName] = new List<BoneSegment>();
-
-        var segments = _selectedEye.BoneTimelines[_currentAnimName];
 
         if (segments.Count == 0)
         {
@@ -1557,16 +1986,23 @@ public class MonsterEditorTab : EditorTab
                 return;
             }
 
-            bool inherit = _selectedEye.HiddenByDefault;
-            float baseOpacity = _selectedEye.Opacity;
-            segments.Add(new BoneSegment { StartTime = 0f, EndTime = splitTime, BoneName = _selectedEye.AnchorBone, Hidden = inherit, OpacityStart = baseOpacity, OpacityEnd = baseOpacity });
-            segments.Add(new BoneSegment { StartTime = splitTime, EndTime = duration, BoneName = _selectedEye.AnchorBone, Hidden = inherit, OpacityStart = baseOpacity, OpacityEnd = baseOpacity });
+            string bone = ov.BoneName ?? _selectedEye.AnchorBone;
+            bool hidden = ov.Hidden ?? _selectedEye.HiddenByDefault;
+            float opacity = ov.Opacity ?? _selectedEye.Opacity;
+
+            segments.Add(new BoneSegment
+            {
+                StartTime = 0f, EndTime = splitTime, BoneName = bone,
+                Hidden = hidden, OpacityStart = opacity, OpacityEnd = opacity
+            });
+            segments.Add(new BoneSegment
+            {
+                StartTime = splitTime, EndTime = duration, BoneName = bone,
+                Hidden = hidden, OpacityStart = opacity, OpacityEnd = opacity
+            });
             CacheSegmentOffset(segments[0]);
             CacheSegmentOffset(segments[1]);
-
-            SetOutput(inherit
-                ? "Split at " + splitTime.ToString("F2") + "s — toggle 'Visible' on the segment where this eye should appear."
-                : "Split at " + splitTime.ToString("F2") + "s — click 'Edit' to set bone and position.");
+            SetOutput("Split at " + splitTime.ToString("F2") + "s — click 'Edit' to set bone and position per segment.");
         }
         else
         {
@@ -1575,7 +2011,6 @@ public class MonsterEditorTab : EditorTab
                 var seg = segments[i];
                 if (splitTime > seg.StartTime + 0.01f && splitTime < seg.EndTime - 0.01f)
                 {
-                    // Interpolate opacity at the split point
                     float segDur = seg.EndTime - seg.StartTime;
                     float t = segDur > 0f ? (splitTime - seg.StartTime) / segDur : 0f;
                     float midOpacity = Mathf.Lerp(seg.OpacityStart, seg.OpacityEnd, t);
@@ -1598,17 +2033,18 @@ public class MonsterEditorTab : EditorTab
         }
 
         _editingSegmentIndex = -1;
+        RefreshOverridePanel();
         RefreshSegmentUI();
     }
 
     private void StartEditingSegment(int index)
     {
         if (_selectedEye == null) return;
-        if (!_selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs)) return;
-        if (index < 0 || index >= segs.Count) return;
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)) return;
+        if (index < 0 || index >= ov.Segments.Count) return;
 
         _editingSegmentIndex = index;
-        var seg = segs[index];
+        var seg = ov.Segments[index];
         float mid = (seg.StartTime + seg.EndTime) / 2f;
         float dur = GetCurrentAnimDuration();
         if (dur > 0f)
@@ -1617,7 +2053,6 @@ public class MonsterEditorTab : EditorTab
             _playPauseButton.Text = "Play";
             SetAnimationPaused(_currentAnimName, mid / dur);
         }
-
         SetInfo("EDITING segment " + (index + 1) + ": drag the eye to set offset from '" + seg.BoneName + "'.");
         RefreshSegmentUI();
     }
@@ -1625,10 +2060,10 @@ public class MonsterEditorTab : EditorTab
     private void StopEditingSegment()
     {
         if (_selectedEye != null && _editingSegmentIndex >= 0
-            && _selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs)
-            && _editingSegmentIndex < segs.Count)
+            && _selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)
+            && _editingSegmentIndex < ov.Segments.Count)
         {
-            CacheSegmentOffsetFromCurrentPose(segs[_editingSegmentIndex]);
+            CacheSegmentOffsetFromCurrentPose(ov.Segments[_editingSegmentIndex]);
         }
         _editingSegmentIndex = -1;
         SetInfo(_placements.Count + " eye(s) placed.");
@@ -1638,7 +2073,8 @@ public class MonsterEditorTab : EditorTab
     private void RemoveSegment(int index)
     {
         if (_selectedEye == null) return;
-        if (!_selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segs)) return;
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)) return;
+        var segs = ov.Segments;
         if (index < 0 || index >= segs.Count) return;
 
         if (_editingSegmentIndex == index) _editingSegmentIndex = -1;
@@ -1650,26 +2086,34 @@ public class MonsterEditorTab : EditorTab
             else if (index == segs.Count - 1) segs[index - 1].EndTime = segs[index].EndTime;
             else segs[index - 1].EndTime = segs[index].EndTime;
         }
-
         segs.RemoveAt(index);
 
-        if (segs.Count <= 1)
+        if (segs.Count <= 1 && segs.Count == 1)
         {
-            _selectedEye.BoneTimelines.Remove(_currentAnimName);
+            // One segment left — collapse back into the override
+            var last = segs[0];
+            ov.BoneName = last.BoneName;
+            if (last.HasSpineOffset) { ov.SpineOffset = last.SpineOffset; ov.HasSpineOffset = true; }
+            ov.Hidden = last.Hidden;
+            ov.Opacity = last.OpacityStart;
+            segs.Clear();
             _editingSegmentIndex = -1;
-            if (segs.Count == 1) SetOutput("Only one segment left — removed. Eye uses default bone.");
+            SetOutput("Only one segment left — collapsed into override.");
         }
 
+        RefreshOverridePanel();
         RefreshSegmentUI();
     }
 
     private void ClearSegmentsForSelected()
     {
         if (_selectedEye == null) return;
-        _selectedEye.BoneTimelines.Remove(_currentAnimName);
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov)) return;
+        ov.Segments.Clear();
         _editingSegmentIndex = -1;
+        RefreshOverridePanel();
         RefreshSegmentUI();
-        SetOutput("Cleared segments for " + _currentAnimName + ".");
+        SetOutput("Cleared time segments for " + _currentAnimName + ". Override still active.");
     }
 
     private void CacheSegmentOffset(BoneSegment seg)
@@ -1707,6 +2151,10 @@ public class MonsterEditorTab : EditorTab
         else seg.HasSpineOffset = false;
     }
 
+    // ═══════════════════════════════════════════════
+    //  SEGMENT UI
+    // ═══════════════════════════════════════════════
+
     private void RefreshSegmentUI()
     {
         foreach (var child in _segmentList.GetChildren())
@@ -1714,28 +2162,25 @@ public class MonsterEditorTab : EditorTab
 
         if (_selectedEye == null)
         {
-            _segmentList.AddChild(MakeLabel("Select an eye first.", Vector2.Zero, new Vector2(600, 20), 11, EditorTheme.TextDim));
-            return;
-        }
-        if (_currentAnimName == "idle_loop")
-        {
-            _segmentList.AddChild(MakeLabel("Switch to a non-idle animation to set up bone segments.",
+            _segmentList.AddChild(MakeLabel("Select an eye first.",
                 Vector2.Zero, new Vector2(600, 20), 11, EditorTheme.TextDim));
             return;
         }
-        if (!_selectedEye.BoneTimelines.TryGetValue(_currentAnimName, out var segments) || segments.Count == 0)
+
+        if (!_selectedEye.AnimOverrides.TryGetValue(_currentAnimName, out var ov) || ov.Segments.Count == 0)
         {
-            string hint = _selectedEye.HiddenByDefault
-                ? "This eye is hidden by default — scrub to where it should appear, click 'Split here', then toggle 'Visible'."
-                : "No segments — eye follows default bone ('" + _selectedEye.AnchorBone + "'). To switch mid-animation: scrub, click 'Split here'.";
-            var lbl = MakeLabel(hint, Vector2.Zero, new Vector2(600, 50), 11, EditorTheme.TextDim);
+            string hint = _selectedEye.AnimOverrides.ContainsKey(_currentAnimName)
+                ? "No time segments. Eye uses the override above for the entire animation."
+                : "No override active. Add one above, then split if you need mid-animation bone switching.";
+
+            var lbl = MakeLabel(hint, Vector2.Zero, new Vector2(600, 40), 11, EditorTheme.TextDim);
             lbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             _segmentList.AddChild(lbl);
             return;
         }
 
-        for (int i = 0; i < segments.Count; i++)
-            BuildSegmentRow(segments, i);
+        for (int i = 0; i < ov.Segments.Count; i++)
+            BuildSegmentRow(ov.Segments, i);
     }
 
     private void BuildSegmentRow(List<BoneSegment> segments, int i)
