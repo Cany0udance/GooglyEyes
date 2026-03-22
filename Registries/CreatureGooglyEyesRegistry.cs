@@ -224,7 +224,7 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(32.5f, -91.1f), Scale = 0.72f, AnchorBone = "body-twist" },
         }},
         { "FROG_KNIGHT", new EyeConfig[] {
-            new EyeConfig { Offset = new Vector2(392.5f, 114.3f), Scale = 0.67f, AnchorBone = "face_twist2",
+            new EyeConfig { Offset = new Vector2(5.3f, -3.9f), Scale = 0.67f, AnchorBone = "face_twist2",
                 BoneSegments = new Dictionary<string, BoneSegment[]> {
                     { "die", new BoneSegment[] {
                         new BoneSegment { StartTime = 0.00f, EndTime = 1.10f, BoneName = "face_twist2", Offset = new Vector2(0.0f, 0.0f) },
@@ -923,15 +923,47 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(23.5f, 18.0f), Scale = 0.07f, AnchorBone = "chomper2" },
             new EyeConfig { Offset = new Vector2(21.8f, 18.2f), Scale = 0.07f, AnchorBone = "chomper1" },
         }},
+        { "SOUL_FYSH", new EyeConfig[] {
+    new EyeConfig { Offset = new Vector2(121.9f, -7.1f), Scale = 1.16f, AnchorBone = "eye",
+        BoneSegments = new Dictionary<string, BoneSegment[]> {
+            { "attack_debuff", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 1.40f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 0.50f },
+            } },
+            { "die", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 1.18f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f) },
+                new BoneSegment { StartTime = 1.18f, EndTime = 2.42f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 1.00f, OpacityEnd = 0.00f },
+                new BoneSegment { StartTime = 2.42f, EndTime = 4.20f, Hidden = true },
+            } },
+            { "die_intangible", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 1.64f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 0.50f },
+                new BoneSegment { StartTime = 1.64f, EndTime = 2.47f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 0.00f },
+                new BoneSegment { StartTime = 2.47f, EndTime = 4.20f, Hidden = true },
+            } },
+            { "hurt_intangible", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.90f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 0.50f },
+            } },
+            { "intangible_end", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.48f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 0.50f },
+                new BoneSegment { StartTime = 0.48f, EndTime = 1.00f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 1.00f },
+            } },
+            { "intangible_loop", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 10.00f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 0.50f, OpacityEnd = 0.50f },
+            } },
+            { "intangible_start", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.27f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f) },
+                new BoneSegment { StartTime = 0.27f, EndTime = 1.13f, BoneName = "eye", Offset = new Vector2(121.9f, -7.1f), OpacityStart = 1.00f, OpacityEnd = 0.50f },
+            } },
+        } },
+}},
         { "THE_FORGOTTEN", new EyeConfig[] {
-            new EyeConfig { Offset = new Vector2(248.6f, -380.0f), Scale = 1.00f, AnchorBone = "face",
+            new EyeConfig { Offset = new Vector2(147.3f, 38.0f), Scale = 1.00f, AnchorBone = "face",
                 BoneSegments = new Dictionary<string, BoneSegment[]> {
                     { "die", new BoneSegment[] {
                         new BoneSegment { StartTime = 0.00f, EndTime = 1.24f, BoneName = "face", Offset = new Vector2(145.7f, 36.0f) },
                         new BoneSegment { StartTime = 1.24f, EndTime = 2.00f, BoneName = "", Offset = new Vector2(0.0f, 0.0f) },
                     } },
                 } },
-            new EyeConfig { Offset = new Vector2(-34.9f, -458.1f), Scale = 1.00f, AnchorBone = "face",
+            new EyeConfig { Offset = new Vector2(-141.6f, 22.8f), Scale = 1.00f, AnchorBone = "face",
                 BoneSegments = new Dictionary<string, BoneSegment[]> {
                     { "die", new BoneSegment[] {
                         new BoneSegment { StartTime = 0.00f, EndTime = 1.24f, BoneName = "face", Offset = new Vector2(-148.2f, 26.9f) },
@@ -966,14 +998,14 @@ public static class CreatureGooglyEyesRegistry
                 } },
         }},
         { "THE_LOST", new EyeConfig[] {
-            new EyeConfig { Offset = new Vector2(186.7f, -419.1f), Scale = 0.57f, AnchorBone = "face",
+            new EyeConfig { Offset = new Vector2(74.9f, 18.7f), Scale = 0.57f, AnchorBone = "face",
                 BoneSegments = new Dictionary<string, BoneSegment[]> {
                     { "die", new BoneSegment[] {
                         new BoneSegment { StartTime = 0.00f, EndTime = 1.27f, BoneName = "face", Offset = new Vector2(79.5f, 14.5f) },
                         new BoneSegment { StartTime = 1.27f, EndTime = 2.00f, BoneName = "", Offset = new Vector2(79.5f, 14.5f) },
                     } },
                 } },
-            new EyeConfig { Offset = new Vector2(49.4f, -448.6f), Scale = 0.57f, AnchorBone = "face",
+            new EyeConfig { Offset = new Vector2(-53.9f, 33.5f), Scale = 0.57f, AnchorBone = "face",
                 BoneSegments = new Dictionary<string, BoneSegment[]> {
                     { "die", new BoneSegment[] {
                         new BoneSegment { StartTime = 0.00f, EndTime = 1.28f, BoneName = "face", Offset = new Vector2(-60.9f, 18.0f) },

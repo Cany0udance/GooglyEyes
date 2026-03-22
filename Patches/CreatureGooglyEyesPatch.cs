@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace GooglyEyes;
 [HarmonyPatch(typeof(NCreature))]
-public static class GooglyEyesPatch
+public static class CreatureGooglyEyesPatch
 {
     private class EyePhysics
     {
