@@ -12,24 +12,31 @@ namespace GooglyEyes;
 [HarmonyPatch(typeof(NCharacterSelectScreen))]
 public static class CharSelectBgGooglyEyesPatch
 {
-    [HarmonyPatch("SelectCharacter")]
+    [HarmonyPatch("_Ready")]
     [HarmonyPostfix]
-    static void SelectCharacter_Postfix(NCharacterSelectScreen __instance, CharacterModel characterModel, Control ____bgContainer)
+    static void Ready_Postfix(NCharacterSelectScreen __instance, Control ____bgContainer)
     {
-        try
+        if (____bgContainer == null) return;
+        ____bgContainer.ChildEnteredTree += (Node child) =>
         {
-            if (characterModel == null || ____bgContainer == null) return;
-            var charPath = characterModel.CharacterSelectBg;
-            if (!ScreenGooglyEyesRegistry.Configs.ContainsKey(charPath)) return;
-            // The bg scene was just added as the last child of _bgContainer
-            if (____bgContainer.GetChildCount() == 0) return;
-            var bgNode = ____bgContainer.GetChild(____bgContainer.GetChildCount() - 1);
-            ScreenGooglyEyesHelper.ApplyEyesToScene(bgNode, charPath);
-        }
-        catch (Exception e)
-        {
-            GD.PrintErr("[GooglyEyes] CharSelectBg patch error: " + e);
-        }
+            try
+            {
+                foreach (CharacterModel character in ModelDb.AllCharacters)
+                {
+                    var charPath = character.CharacterSelectBg;
+                    if (!ScreenGooglyEyesRegistry.Configs.ContainsKey(charPath)) continue;
+                    if (child.Name.ToString().Contains(character.Id.Entry, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ScreenGooglyEyesHelper.ApplyEyesToScene(child, charPath);
+                        return;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr("[GooglyEyes] BgContainer child-added error: " + e);
+            }
+        };
     }
 }
 
@@ -143,7 +150,6 @@ public static class ScreenGooglyEyesHelper
     }
 
     parent.AddChild(driver);
-    GD.Print("[GooglyEyes] Applied " + configs.Length + " static eyes to screen: " + scenePath);
 }
 
     /// <summary>Fallback for Node2D-rooted static scenes.</summary>
@@ -192,7 +198,6 @@ public static class ScreenGooglyEyesHelper
         }
 
         parent.AddChild(driver);
-        GD.Print("[GooglyEyes] Applied " + configs.Length + " static eyes (Node2D) to screen: " + scenePath);
     }
 
     private static void ApplySpineEyes(Node sceneRoot, string scenePath, EyeConfig[] configs, Node spineNode)
@@ -240,6 +245,7 @@ public static class ScreenGooglyEyesHelper
 
         var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking" };
         var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris" };
+        irisSprite.Position = Vector2.Down * maxRadius;
 
         eyeContainer.AddChild(eyeSprite);
         eyeContainer.AddChild(irisSprite);
@@ -256,6 +262,7 @@ public static class ScreenGooglyEyesHelper
             ConfigScale = config.Scale,
             Container = eyeContainer,
             Iris = irisSprite,
+            IrisOffset = Vector2.Down * maxRadius,
             MaxRadius = maxRadius,
             SourceConfig = config,
             HiddenByDefault = hidden,
@@ -282,7 +289,7 @@ public static class ScreenGooglyEyesHelper
         UpdateScreenEyes(state);
     }));
 
-    GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to screen: " + scenePath);
+    UpdateScreenEyes(state);
 }
 
 

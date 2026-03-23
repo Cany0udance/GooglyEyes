@@ -41,6 +41,10 @@ public static class RelicGooglyEyesRegistry
             new RelicEyeConfig { Offset = new Vector2(-12.8f, -9.8f), Scale = 0.06f },
             new RelicEyeConfig { Offset = new Vector2(-18.3f, 0.8f), Scale = 0.03f },
         }},
+        { "FAKE_HAPPY_FLOWER", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(-3.2f, -18.4f), Scale = 0.03f },
+            new RelicEyeConfig { Offset = new Vector2(4.7f, -18.9f), Scale = 0.03f },
+        }},
         { "FAKE_SNECKO_EYE", new RelicEyeConfig[] {
             new RelicEyeConfig { Offset = new Vector2(-5.2f, -2.2f), Scale = 0.20f },
         }},

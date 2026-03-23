@@ -62,7 +62,9 @@ public static class RelicGooglyEyesPatch
             var driver = new RelicEyeDriver
             {
                 Name = "GooglyEyeDriver",
-                Relic = __instance
+                Relic = __instance,
+                OriginalIconSize = icon.Size,
+                Configs = configs
             };
  
             int eyeIndex = 0;
@@ -155,12 +157,16 @@ public partial class RelicEyeDriver : Node
     public List<EyeData> Eyes = new();
     public Vector2 PrevGlobalPos;
     public bool Initialized;
- 
+    public Vector2 OriginalIconSize;
+    public RelicEyeConfig[] Configs;
+    private int _sizeCheckFrames = 5;
+    private bool _sizeChecked;
+
     private const float Gravity = 300f;
     private const float Damping = 0.99f;
     private const float Bounciness = 0.9f;
     private const float MoveForceMultiplier = 3f;
- 
+
     public class EyeData
     {
         public Control Container;
@@ -169,35 +175,56 @@ public partial class RelicEyeDriver : Node
         public Vector2 IrisVelocity;
         public float MaxRadius;
     }
- 
+
     public override void _Process(double delta)
     {
         if (!GodotObject.IsInstanceValid(Relic)) { QueueFree(); return; }
- 
+
+        if (_sizeCheckFrames > 0)
+        {
+            _sizeCheckFrames--;
+            var icon = Relic.Icon;
+            if (icon != null && Configs != null && OriginalIconSize.X > 0)
+            {
+                var currentSize = icon.Size;
+                if (currentSize != OriginalIconSize)
+                {
+                    float sizeRatio = currentSize.X / OriginalIconSize.X;
+                    Vector2 newCenter = currentSize / 2f;
+                    for (int i = 0; i < Eyes.Count && i < Configs.Length; i++)
+                    {
+                        Eyes[i].Container.Position = newCenter + Configs[i].Offset * sizeRatio;
+                        Eyes[i].Container.Scale = Vector2.One * Configs[i].Scale * sizeRatio;
+                    }
+                    _sizeCheckFrames = 0;
+                }
+            }
+        }
+
         float dt = (float)delta;
         if (dt <= 0f) return;
- 
+
         var currentGlobalPos = Relic.GlobalPosition;
- 
+
         if (!Initialized)
         {
             PrevGlobalPos = currentGlobalPos;
             Initialized = true;
             return;
         }
- 
+
         var moveDelta = currentGlobalPos - PrevGlobalPos;
         PrevGlobalPos = currentGlobalPos;
- 
+
         foreach (var eye in Eyes)
         {
             if (!GodotObject.IsInstanceValid(eye.Container)) continue;
- 
+
             eye.IrisVelocity -= moveDelta * MoveForceMultiplier;
             eye.IrisVelocity += Vector2.Down * Gravity * dt;
             eye.IrisVelocity *= Damping;
             eye.IrisOffset += eye.IrisVelocity * dt;
- 
+
             float dist = eye.IrisOffset.Length();
             if (dist > eye.MaxRadius)
             {
@@ -207,7 +234,7 @@ public partial class RelicEyeDriver : Node
                 if (dot > 0)
                     eye.IrisVelocity -= normal * dot * (1f + Bounciness);
             }
- 
+
             eye.IrisWrapper.Position = eye.IrisOffset;
         }
     }

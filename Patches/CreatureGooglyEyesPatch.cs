@@ -141,8 +141,6 @@ public static class CreatureGooglyEyesPatch
                     if (!GodotObject.IsInstanceValid(state.SpineNode)) return;
                     UpdateEyes(state);
                 }));
-
-                GD.Print("[GooglyEyes] Applied " + configs.Length + " eyes to " + creatureId);
                 
                 // Resolve initial visibility/opacity immediately to avoid a
                 // single frame of full-opacity eyes before the signal fires.
