@@ -1,4 +1,5 @@
 ﻿using Godot;
+using GooglyEyes.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Helpers;
@@ -51,8 +52,8 @@ public static class ScreenGooglyEyesHelper
 
     private static void EnsureTextures()
     {
-        _eyeTexture ??= ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
-        _irisTexture ??= ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
+        _eyeTexture ??= GooglyTextureGenerator.EyeTexture;
+        _irisTexture ??= GooglyTextureGenerator.IrisTexture;
     }
 
     public static void ApplyEyesToScene(Node sceneRoot, string scenePath)
@@ -74,6 +75,19 @@ public static class ScreenGooglyEyesHelper
         {
             ApplyStaticEyes(sceneRoot, scenePath, configs);
         }
+    }
+    
+    public static void ApplyEyesToScene(Node sceneRoot, string scenePath, EyeConfig[] configs)
+    {
+        if (configs.Length == 0) return;
+        EnsureTextures();
+        if (_eyeTexture == null || _irisTexture == null) return;
+
+        var spineNode = FindSpineSprite(sceneRoot);
+        if (spineNode != null)
+            ApplySpineEyes(sceneRoot, scenePath, configs, spineNode);
+        else
+            ApplyStaticEyes(sceneRoot, scenePath, configs);
     }
 
     private static void ApplyStaticEyes(Node sceneRoot, string scenePath, EyeConfig[] configs)
@@ -116,20 +130,23 @@ public static class ScreenGooglyEyesHelper
         {
             Texture = _eyeTexture, Name = "EyeBacking",
             Size = eyeSize, Position = -eyeSize / 2f,
+            Material = GooglyTextureGenerator.GetEyeMaterial(),
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
 
         var irisWrapper = new Control
         {
             Name = "IrisWrapper", Size = Vector2.Zero,
-            Position = Vector2.Zero,
+            Position = Vector2.Down * maxRadius,  // was Vector2.Zero
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
+
 
         var irisRect = new TextureRect
         {
             Texture = _irisTexture, Name = "Iris",
             Size = irisSize, Position = -irisSize / 2f,
+            Material = GooglyTextureGenerator.GetIrisMaterial(),
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
 
@@ -179,8 +196,9 @@ public static class ScreenGooglyEyesHelper
             if (config.Opacity < 0.99f)
                 eyeContainer.Modulate = new Color(1f, 1f, 1f, config.Opacity);
 
-            var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking" };
-            var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris" };
+            var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking", Material = GooglyTextureGenerator.GetEyeMaterial() };
+            var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris", Material = GooglyTextureGenerator.GetIrisMaterial() };
+            irisSprite.Position = Vector2.Down * maxRadius;
 
             eyeContainer.AddChild(eyeSprite);
             eyeContainer.AddChild(irisSprite);
@@ -243,8 +261,8 @@ public static class ScreenGooglyEyesHelper
         if (config.Opacity < 0.99f)
             eyeContainer.Modulate = new Color(1f, 1f, 1f, config.Opacity);
 
-        var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking" };
-        var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris" };
+        var eyeSprite = new Sprite2D { Texture = _eyeTexture, Name = "EyeBacking", Material = GooglyTextureGenerator.GetEyeMaterial() };
+        var irisSprite = new Sprite2D { Texture = _irisTexture, Name = "Iris", Material = GooglyTextureGenerator.GetIrisMaterial() };
         irisSprite.Position = Vector2.Down * maxRadius;
 
         eyeContainer.AddChild(eyeSprite);
@@ -592,4 +610,92 @@ public static class AncientBgGooglyEyesPatch
             GD.PrintErr("[GooglyEyes] Ancient bg patch error: " + e);
         }
     }
+    
+[HarmonyPatch(typeof(NEventLayout))]
+public static class EventBgGooglyEyesPatch
+{
+    [HarmonyPatch("InitializeVisuals")]
+    [HarmonyPostfix]
+    static void InitializeVisuals_Postfix(NEventLayout __instance, EventModel ____event, TextureRect ____portrait)
+    {
+        try
+        {
+            if (____event == null || ____portrait == null || ____portrait.Texture == null) return;
+            var path = ImageHelper.GetImagePath("events/" + ____event.Id.Entry.ToLowerInvariant() + ".png");
+            if (!ScreenGooglyEyesRegistry.Configs.TryGetValue(path, out var configs)) return;
+            if (configs.Length == 0) return;
+
+            var textureSize = ____portrait.Texture.GetSize();
+            var controlSize = ____portrait.Size;
+
+            // Figure out where the texture actually renders inside the control
+            var transform = ComputeTextureTransform(____portrait.StretchMode, textureSize, controlSize);
+
+            var adjusted = new EyeConfig[configs.Length];
+            for (int i = 0; i < configs.Length; i++)
+            {
+                adjusted[i] = new EyeConfig
+                {
+                    Offset = transform.Origin + configs[i].Offset * transform.Scale,
+                    Scale = configs[i].Scale * ((transform.Scale.X + transform.Scale.Y) / 2f),
+                    AnchorBone = configs[i].AnchorBone,
+                    HiddenByDefault = configs[i].HiddenByDefault,
+                    Opacity = configs[i].Opacity,
+                    BoneSegments = configs[i].BoneSegments
+                };
+            }
+
+            ScreenGooglyEyesHelper.ApplyEyesToScene(____portrait, path, adjusted);
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr("[GooglyEyes] Event portrait patch error: " + e);
+        }
+    }
+
+    private static (Vector2 Origin, Vector2 Scale) ComputeTextureTransform(
+        TextureRect.StretchModeEnum stretchMode, Vector2 textureSize, Vector2 controlSize)
+    {
+        switch (stretchMode)
+        {
+            case TextureRect.StretchModeEnum.Scale:
+                return (Vector2.Zero, controlSize / textureSize);
+
+            case TextureRect.StretchModeEnum.Tile:
+            case TextureRect.StretchModeEnum.Keep:
+                return (Vector2.Zero, Vector2.One);
+
+            case TextureRect.StretchModeEnum.KeepCentered:
+                var offset = (controlSize - textureSize) / 2f;
+                return (offset, Vector2.One);
+
+            case TextureRect.StretchModeEnum.KeepAspect:
+            {
+                float scale = Mathf.Min(controlSize.X / textureSize.X, controlSize.Y / textureSize.Y);
+                var scaled = textureSize * scale;
+                var origin = (controlSize - scaled) / 2f;
+                return (origin, Vector2.One * scale);
+            }
+
+            case TextureRect.StretchModeEnum.KeepAspectCentered:
+            {
+                float scale = Mathf.Min(controlSize.X / textureSize.X, controlSize.Y / textureSize.Y);
+                var scaled = textureSize * scale;
+                var origin = (controlSize - scaled) / 2f;
+                return (origin, Vector2.One * scale);
+            }
+
+            case TextureRect.StretchModeEnum.KeepAspectCovered:
+            {
+                float scale = Mathf.Max(controlSize.X / textureSize.X, controlSize.Y / textureSize.Y);
+                var scaled = textureSize * scale;
+                var origin = (controlSize - scaled) / 2f;
+                return (origin, Vector2.One * scale);
+            }
+
+            default:
+                return (Vector2.Zero, Vector2.One);
+        }
+    }
+}
 }

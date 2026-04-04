@@ -6,25 +6,72 @@ public static class CreatureGooglyEyesRegistry
 {
     public static readonly Dictionary<string, EyeConfig[]> Configs = new()
     {
-        { "TRACKER_RUBY_RAIDER", new EyeConfig[] {
-            new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.30f, AnchorBone = "t_eye",
-                BoneSegments = new Dictionary<string, BoneSegment[]> {
-                    { "hurt", new BoneSegment[] {
-                        new BoneSegment { StartTime = 0.00f, EndTime = 0.07f, BoneName = "t_eye", Offset = new Vector2(0.0f, 0.0f) },
-                        new BoneSegment { StartTime = 0.07f, EndTime = 0.60f, BoneName = "t_facing_eye_l", Offset = new Vector2(0.0f, 0.0f) },
-                        new BoneSegment { StartTime = 0.60f, EndTime = 1.00f, BoneName = "t_eye", Offset = new Vector2(0.0f, 0.0f) },
-                    } },
-                } },
-            new EyeConfig { Offset = new Vector2(2.4f, 3.4f), Scale = 0.30f, AnchorBone = "b_eye" },
-            new EyeConfig { Offset = new Vector2(238.1f, 832.2f), Scale = 0.30f, AnchorBone = "t_facing_eye_r", HiddenByDefault = true,
-                BoneSegments = new Dictionary<string, BoneSegment[]> {
-                    { "hurt", new BoneSegment[] {
-                        new BoneSegment { StartTime = 0.00f, EndTime = 0.07f, Hidden = true },
-                        new BoneSegment { StartTime = 0.07f, EndTime = 0.60f, BoneName = "t_facing_eye_r", Offset = new Vector2(4.5f, -0.4f) },
-                        new BoneSegment { StartTime = 0.60f, EndTime = 1.00f, Hidden = true },
-                    } },
-                } },
-        }},
+{ "TRACKER_RUBY_RAIDER", new EyeConfig[] {
+    new EyeConfig { Offset = new Vector2(2.4f, 3.4f), Scale = 0.30f, AnchorBone = "b_eye",
+        BoneSegments = new Dictionary<string, BoneSegment[]> {
+            { "die", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.61f, BoneName = "b_eye", Offset = new Vector2(2.4f, 3.4f) },
+                new BoneSegment { StartTime = 0.61f, EndTime = 0.77f, Hidden = true },
+                new BoneSegment { StartTime = 0.77f, EndTime = 1.97f, BoneName = "b_eye", Offset = new Vector2(2.4f, 3.4f) },
+            } },
+        } },
+    new EyeConfig { Offset = new Vector2(184.5f, 22.8f), Scale = 0.40f, AnchorBone = "t_head",
+        BoneSegments = new Dictionary<string, BoneSegment[]> {
+            { "hurt", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.10f, BoneName = "t_head", Offset = new Vector2(184.5f, 22.8f) },
+                new BoneSegment { StartTime = 0.10f, EndTime = 0.57f, Hidden = true },
+                new BoneSegment { StartTime = 0.57f, EndTime = 1.00f, BoneName = "t_head", Offset = new Vector2(184.5f, 22.8f) },
+            } },
+        } },
+    new EyeConfig { Offset = new Vector2(109.3f, -17.0f), Scale = 0.40f, AnchorBone = "t_head",
+        BoneSegments = new Dictionary<string, BoneSegment[]> {
+            { "hurt", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.10f, BoneName = "t_head", Offset = new Vector2(109.3f, -17.0f) },
+                new BoneSegment { StartTime = 0.10f, EndTime = 0.57f, Hidden = true },
+                new BoneSegment { StartTime = 0.57f, EndTime = 1.00f, BoneName = "t_head", Offset = new Vector2(109.3f, -17.0f) },
+            } },
+        } },
+    new EyeConfig { Offset = new Vector2(6.0f, -50.1f), Scale = 0.40f, AnchorBone = "t_facing_head",
+        BoneSegments = new Dictionary<string, BoneSegment[]> {
+            { "hurt", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.10f, Hidden = true },
+                new BoneSegment { StartTime = 0.10f, EndTime = 0.57f, BoneName = "t_facing_head", Offset = new Vector2(6.0f, -50.1f) },
+                new BoneSegment { StartTime = 0.57f, EndTime = 1.00f, Hidden = true },
+            } },
+            { "attack", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 2.00f, Hidden = true },
+            } },
+            { "cast", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 2.00f, Hidden = true },
+            } },
+            { "die", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 1.97f, Hidden = true },
+            } },
+            { "idle_loop", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 5.33f, Hidden = true },
+            } },
+        } },
+    new EyeConfig { Offset = new Vector2(3.4f, 40.0f), Scale = 0.40f, AnchorBone = "t_facing_head",
+        BoneSegments = new Dictionary<string, BoneSegment[]> {
+            { "hurt", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.10f, Hidden = true },
+                new BoneSegment { StartTime = 0.10f, EndTime = 0.57f, BoneName = "t_facing_head", Offset = new Vector2(3.4f, 40.0f) },
+                new BoneSegment { StartTime = 0.57f, EndTime = 1.00f, Hidden = true },
+            } },
+            { "attack", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 2.00f, Hidden = true },
+            } },
+            { "cast", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 2.00f, Hidden = true },
+            } },
+            { "die", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 1.97f, Hidden = true },
+            } },
+            { "idle_loop", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 5.33f, Hidden = true },
+            } },
+        } },
+}},
         { "ARCHITECT", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(5.8f, 11.0f), Scale = 0.20f, AnchorBone = "face" },
             new EyeConfig { Offset = new Vector2(7.7f, -35.9f), Scale = 0.20f, AnchorBone = "face" },
@@ -34,8 +81,8 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(58.0f, 28.0f), Scale = 0.29f, AnchorBone = "head" },
         }},
         { "AXE_RUBY_RAIDER", new EyeConfig[] {
-            new EyeConfig { Offset = new Vector2(-37.0f, 0.7f), Scale = 0.27f, AnchorBone = "eyes" },
-            new EyeConfig { Offset = new Vector2(18.8f, 0.0f), Scale = 0.27f, AnchorBone = "eyes" },
+            new EyeConfig { Offset = new Vector2(-52.9f, -96.2f), Scale = 0.27f, AnchorBone = "face_twist" },
+            new EyeConfig { Offset = new Vector2(4.9f, -83.1f), Scale = 0.27f, AnchorBone = "face_twist" },
         }},
         { "AXEBOT", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(114.4f, -2.2f), Scale = 1.54f, AnchorBone = "head_twist" },

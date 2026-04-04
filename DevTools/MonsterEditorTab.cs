@@ -181,7 +181,7 @@ public class MonsterEditorTab : EditorTab
         {
             var id = monster.Id.Entry;
             var monsterRef = monster;
-            AddCreatureButton(id, () => monsterRef.CreateVisuals(), v => monsterRef.SetupSkins(v));
+            AddCreatureButton(id, () => monsterRef.CreateVisuals(), v => monsterRef.SetupSkins(v.SpineBody, v.SpineBody.GetSkeleton()));
         }
 
         // ── Characters ──

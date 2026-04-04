@@ -1,4 +1,5 @@
 ﻿using Godot;
+using GooglyEyes.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 
@@ -18,12 +19,12 @@ public static class CardGooglyEyesPatch
     {
         if (_eyeTexture == null)
         {
-            _eyeTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
+            _eyeTexture = GooglyTextureGenerator.EyeTexture;
             if (_eyeTexture != null) _eyeSize = _eyeTexture.GetSize();
         }
         if (_irisTexture == null)
         {
-            _irisTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
+            _irisTexture = GooglyTextureGenerator.IrisTexture;
             if (_irisTexture != null) _irisSize = _irisTexture.GetSize();
         }
     }
@@ -78,7 +79,7 @@ public static class CardGooglyEyesPatch
                     Name = "EyeBacking",
                     Size = _eyeSize,
                     Position = -_eyeSize / 2f,
-                    UseParentMaterial = true,
+                    Material = GooglyTextureGenerator.GetEyeMaterial(),
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
 
@@ -88,7 +89,7 @@ public static class CardGooglyEyesPatch
                 {
                     Name = "IrisWrapper",
                     Size = Vector2.Zero,
-                    Position = Vector2.Zero,
+                    Position = Vector2.Down * maxRadius,  // was Vector2.Zero
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
 
@@ -98,7 +99,7 @@ public static class CardGooglyEyesPatch
                     Name = "Iris",
                     Size = _irisSize,
                     Position = -_irisSize / 2f,
-                    UseParentMaterial = true,
+                    Material = GooglyTextureGenerator.GetIrisMaterial(),
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
 

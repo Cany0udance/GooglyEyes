@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Godot;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 
@@ -168,6 +169,17 @@ public class ScreenEditorTab : EditorTab
             var path = SceneHelper.GetScenePath("events/background_scenes/" + id.ToLowerInvariant());
             if (!ResourceLoader.Exists(path)) continue;
 
+            AddSceneButton(id, path);
+        }
+        
+        // ── Event Portraits ──
+        AddSidebarHeader("Events");
+        foreach (var evt in ModelDb.AllEvents.OrderBy(e => e.Id.Entry))
+        {
+            if (evt.LayoutType != EventLayoutType.Default) continue;
+            var id = evt.Id.Entry;
+            var path = ImageHelper.GetImagePath("events/" + id.ToLowerInvariant() + ".png");
+            if (!ResourceLoader.Exists(path)) continue;
             AddSceneButton(id, path);
         }
     }
@@ -627,30 +639,53 @@ public class ScreenEditorTab : EditorTab
         Screen.ResetZoomPan();
 
         // Load the scene
-        var packedScene = ResourceLoader.Load<PackedScene>(scenePath);
-        if (packedScene == null)
+// Load the scene or image
+        if (scenePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
         {
-            SetInfo("Failed to load scene: " + scenePath);
-            return;
-        }
-
-        _currentScene = packedScene.Instantiate();
-        PreviewRoot.AddChild(_currentScene);
-
-        // Center the scene in the preview area
-        if (_currentScene is Control ctrl)
-        {
-            ctrl.Position = new Vector2(
-                (PreviewArea.Size.X - ctrl.Size.X) / 2f,
-                (PreviewArea.Size.Y - ctrl.Size.Y) / 2f
+            var texture = ResourceLoader.Load<Texture2D>(scenePath);
+            if (texture == null)
+            {
+                SetInfo("Failed to load image: " + scenePath);
+                return;
+            }
+            var portrait = new TextureRect
+            {
+                Texture = texture,
+                Name = "EventPortrait",
+                ExpandMode = TextureRect.ExpandModeEnum.KeepSize
+            };
+            _currentScene = portrait;
+            PreviewRoot.AddChild(portrait);
+            portrait.Position = new Vector2(
+                (PreviewArea.Size.X - texture.GetWidth()) / 2f,
+                (PreviewArea.Size.Y - texture.GetHeight()) / 2f
             );
         }
-        else if (_currentScene is Node2D node2d)
+        else
         {
-            node2d.Position = new Vector2(
-                PreviewArea.Size.X / 2f,
-                PreviewArea.Size.Y / 2f
-            );
+            var packedScene = ResourceLoader.Load<PackedScene>(scenePath);
+            if (packedScene == null)
+            {
+                SetInfo("Failed to load scene: " + scenePath);
+                return;
+            }
+            _currentScene = packedScene.Instantiate();
+            PreviewRoot.AddChild(_currentScene);
+
+            if (_currentScene is Control ctrl)
+            {
+                ctrl.Position = new Vector2(
+                    (PreviewArea.Size.X - ctrl.Size.X) / 2f,
+                    (PreviewArea.Size.Y - ctrl.Size.Y) / 2f
+                );
+            }
+            else if (_currentScene is Node2D node2d)
+            {
+                node2d.Position = new Vector2(
+                    PreviewArea.Size.X / 2f,
+                    PreviewArea.Size.Y / 2f
+                );
+            }
         }
 
         // Find the SpineSprite in the scene tree

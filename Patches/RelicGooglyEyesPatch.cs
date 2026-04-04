@@ -1,4 +1,5 @@
 ﻿using Godot;
+using GooglyEyes.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
@@ -20,12 +21,12 @@ public static class RelicGooglyEyesPatch
     {
         if (_eyeTexture == null)
         {
-            _eyeTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
+            _eyeTexture = GooglyTextureGenerator.EyeTexture;
             if (_eyeTexture != null) _eyeSize = _eyeTexture.GetSize();
         }
         if (_irisTexture == null)
         {
-            _irisTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
+            _irisTexture = GooglyTextureGenerator.IrisTexture;
             if (_irisTexture != null) _irisSize = _irisTexture.GetSize();
         }
     }
@@ -86,7 +87,7 @@ public static class RelicGooglyEyesPatch
                     Name = "EyeBacking",
                     Size = _eyeSize,
                     Position = -_eyeSize / 2f,
-                    UseParentMaterial = true,
+                    Material = GooglyTextureGenerator.GetEyeMaterial(),
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
  
@@ -94,17 +95,18 @@ public static class RelicGooglyEyesPatch
                 {
                     Name = "IrisWrapper",
                     Size = Vector2.Zero,
-                    Position = Vector2.Zero,
+                    Position = Vector2.Down * maxRadius, 
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
  
+
                 var irisRect = new TextureRect
                 {
                     Texture = _irisTexture,
                     Name = "Iris",
                     Size = _irisSize,
                     Position = -_irisSize / 2f,
-                    UseParentMaterial = true,
+                    Material = GooglyTextureGenerator.GetIrisMaterial(),
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
  
@@ -256,12 +258,12 @@ public static class RelicInspectGooglyEyesPatch
     {
         if (_eyeTexture == null)
         {
-            _eyeTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
+            _eyeTexture = GooglyTextureGenerator.EyeTexture;
             if (_eyeTexture != null) _eyeSize = _eyeTexture.GetSize();
         }
         if (_irisTexture == null)
         {
-            _irisTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
+            _irisTexture = GooglyTextureGenerator.IrisTexture;
             if (_irisTexture != null) _irisSize = _irisTexture.GetSize();
         }
     }
@@ -356,23 +358,25 @@ public static class RelicInspectGooglyEyesPatch
                     Name = "EyeBacking",
                     Size = _eyeSize,
                     Position = -_eyeSize / 2f,
+                    Material = GooglyTextureGenerator.GetEyeMaterial(),
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
- 
+                
                 var irisWrapper = new Control
                 {
                     Name = "IrisWrapper",
                     Size = Vector2.Zero,
-                    Position = Vector2.Zero,
+                    Position = Vector2.Down * maxRadius, 
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
- 
+
                 var irisRect = new TextureRect
                 {
                     Texture = _irisTexture,
                     Name = "Iris",
                     Size = _irisSize,
                     Position = -_irisSize / 2f,
+                    Material = GooglyTextureGenerator.GetIrisMaterial(),
                     MouseFilter = Control.MouseFilterEnum.Ignore
                 };
  

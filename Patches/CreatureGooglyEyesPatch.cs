@@ -1,9 +1,11 @@
 ﻿using Godot;
+using GooglyEyes.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace GooglyEyes;
+
 [HarmonyPatch(typeof(NCreature))]
 public static class CreatureGooglyEyesPatch
 {
@@ -68,9 +70,8 @@ public static class CreatureGooglyEyesPatch
             var spineNode = spineBody.BoundObject as Node2D;
             if (spineNode == null) return;
 
-            var eyeTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_eye.png");
-            var irisTexture = ResourceLoader.Load<Texture2D>("res://GooglyEyes/googly_iris.png");
-            if (eyeTexture == null || irisTexture == null) return;
+            var eyeTexture = GooglyTextureGenerator.EyeTexture;
+            var irisTexture = GooglyTextureGenerator.IrisTexture;
 
             float eyeRadius = eyeTexture.GetWidth() / 2f;
             float irisRadius = irisTexture.GetWidth() / 2f;
@@ -87,11 +88,8 @@ public static class CreatureGooglyEyesPatch
                 eyeContainer.Name = $"GooglyEye_{eyeIndex}";
                 eyeContainer.Scale = Vector2.One * config.Scale;
 
-                var eyeSprite = new Sprite2D { Texture = eyeTexture, Name = "EyeBacking" };
-                var irisSprite = new Sprite2D { Texture = irisTexture, Name = "Iris" };
-
-                eyeSprite.UseParentMaterial = true;
-                irisSprite.UseParentMaterial = true;
+                var eyeSprite = new Sprite2D { Texture = eyeTexture, Name = "EyeBacking", Material = GooglyTextureGenerator.GetEyeMaterial() };
+                var irisSprite = new Sprite2D { Texture = irisTexture, Name = "Iris", Material = GooglyTextureGenerator.GetIrisMaterial() };
 
                 eyeContainer.AddChild(eyeSprite);
                 eyeContainer.AddChild(irisSprite);
@@ -99,6 +97,7 @@ public static class CreatureGooglyEyesPatch
 
                 float maxRadius = eyeRadius - irisRadius;
                 if (maxRadius < 1f) maxRadius = 1f;
+                irisSprite.Position = Vector2.Down * maxRadius;
 
                 bool hidden = config.HiddenByDefault;
                 eyeContainer.Visible = !hidden;
