@@ -150,5 +150,23 @@ public static class RelicGooglyEyesRegistry
         { "WHITE_BEAST_STATUE", new RelicEyeConfig[] {
             new RelicEyeConfig { Offset = new Vector2(-16.4f, 1.8f), Scale = 0.03f },
         }},
+        
+        // Acts From The Past
+        
+        { "BLOODY_IDOL", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(-4.4f, -15.2f), Scale = 0.04f },
+            new RelicEyeConfig { Offset = new Vector2(6.0f, -15.4f), Scale = 0.04f },
+        }},
+        { "GOLDEN_IDOL_ORIGINAL", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(-4.8f, -13.9f), Scale = 0.04f },
+            new RelicEyeConfig { Offset = new Vector2(5.7f, -14.2f), Scale = 0.04f },
+        }},
+        { "NECRONOMICON", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(-8.4f, -3.6f), Scale = 0.08f },
+            new RelicEyeConfig { Offset = new Vector2(6.7f, -12.2f), Scale = 0.08f },
+        }},
+
+        
+        
     };
 }

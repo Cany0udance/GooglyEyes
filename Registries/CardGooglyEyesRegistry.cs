@@ -1099,5 +1099,16 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-71.7f, -317.0f), Scale = 0.13f },
             new CardEyeConfig { Offset = new Vector2(-72.7f, -285.6f), Scale = 0.18f },
         }},
+        
+        // Acts From The Past
+        
+        { "MADNESS", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-186.1f, -317.4f), Scale = 0.20f },
+            new CardEyeConfig { Offset = new Vector2(-144.5f, -331.2f), Scale = 0.20f },
+        }},
+        { "NECRONOMICURSE", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-131.5f, -330.6f), Scale = 0.30f },
+            new CardEyeConfig { Offset = new Vector2(-197.2f, -318.8f), Scale = 0.30f },
+        }},
     };
 }
