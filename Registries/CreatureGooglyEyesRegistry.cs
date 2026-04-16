@@ -1194,7 +1194,7 @@ public static class CreatureGooglyEyesRegistry
         
         // Acts From The Past
         
-        { "ACID_SLIME_LARGE", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-ACID_SLIME_LARGE", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.11f, AnchorBone = "eye1" },
             new EyeConfig { Offset = new Vector2(-1.1f, -1.6f), Scale = 0.11f, AnchorBone = "eye2" },
             new EyeConfig { Offset = new Vector2(1.2f, 1.1f), Scale = 0.11f, AnchorBone = "eye3" },
@@ -1203,115 +1203,115 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(-0.4f, 1.0f), Scale = 0.11f, AnchorBone = "eye6" },
             new EyeConfig { Offset = new Vector2(2.1f, -0.6f), Scale = 0.11f, AnchorBone = "eye7" },
         }},
-        { "ACID_SLIME_MEDIUM", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-ACID_SLIME_MEDIUM", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.12f, AnchorBone = "eye1" },
             new EyeConfig { Offset = new Vector2(-1.2f, 1.1f), Scale = 0.12f, AnchorBone = "eye2" },
             new EyeConfig { Offset = new Vector2(0.9f, 0.6f), Scale = 0.12f, AnchorBone = "eye3" },
             new EyeConfig { Offset = new Vector2(2.3f, 0.0f), Scale = 0.12f, AnchorBone = "eye4" },
         }},
-        { "ACID_SLIME_SMALL", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-ACID_SLIME_SMALL", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-0.3f, -0.4f), Scale = 0.10f, AnchorBone = "eye" },
         }},
-        { "AWAKENED_ONE", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-AWAKENED_ONE", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.14f, AnchorBone = "Eye" },
         }},
-        { "BEAR", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-BEAR", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1.1f, -2.5f), Scale = 0.09f, AnchorBone = "Eye_R" },
             new EyeConfig { Offset = new Vector2(-0.2f, 3.7f), Scale = 0.09f, AnchorBone = "Eye_L" },
         }},
-        { "BOOK_OF_STABBING", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-BOOK_OF_STABBING", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(126.4f, 12.1f), Scale = 0.15f, AnchorBone = "dagger" },
             new EyeConfig { Offset = new Vector2(119.4f, -20.5f), Scale = 0.15f, AnchorBone = "dagger" },
         }},
-        { "BRONZE_AUTOMATON", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-BRONZE_AUTOMATON", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-23.6f, -45.0f), Scale = 0.18f, AnchorBone = "chest" },
             new EyeConfig { Offset = new Vector2(16.1f, -47.1f), Scale = 0.18f, AnchorBone = "chest" },
         }},
-        { "BYRD", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-BYRD", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-0.2f, -0.8f), Scale = 0.08f, AnchorBone = "eye" },
         }},
-        { "CENTURION", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-CENTURION", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(9.2f, -3.5f), Scale = 0.12f, AnchorBone = "Head" },
             new EyeConfig { Offset = new Vector2(15.5f, -27.3f), Scale = 0.12f, AnchorBone = "Head" },
         }},
-        { "CHAMP", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-CHAMP", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(13.3f, -41.2f), Scale = 0.14f, AnchorBone = "Head" },
             new EyeConfig { Offset = new Vector2(3.9f, -14.3f), Scale = 0.14f, AnchorBone = "Head" },
         }},
-        { "CHOSEN", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-CHOSEN", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(10.2f, -13.2f), Scale = 0.09f, AnchorBone = "Head" },
         }},
-        { "COLLECTOR", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-COLLECTOR", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1.2f, -1.7f), Scale = 0.15f, AnchorBone = "righteyefireslot" },
             new EyeConfig { Offset = new Vector2(-2.9f, -2.1f), Scale = 0.15f, AnchorBone = "lefteyefireslot" },
         }},
-        { "CULTIST", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-CULTIST", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-8.6f, -8.3f), Scale = 0.08f, AnchorBone = "head" },
         }},
-        { "DARKLING", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-DARKLING", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, -0.0f), Scale = 0.18f, AnchorBone = "eye_main_R" },
             new EyeConfig { Offset = new Vector2(-0.3f, 0.7f), Scale = 0.18f, AnchorBone = "eye_main_L" },
             new EyeConfig { Offset = new Vector2(-0.2f, -1.0f), Scale = 0.11f, AnchorBone = "eye_R" },
             new EyeConfig { Offset = new Vector2(1.0f, 2.1f), Scale = 0.11f, AnchorBone = "eye_L" },
         }},
-        { "DECA", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-DECA", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(20.6f, -62.8f), Scale = 0.45f, AnchorBone = "Hips" },
             new EyeConfig { Offset = new Vector2(-95.4f, -63.4f), Scale = 0.45f, AnchorBone = "Hips" },
         }},
-        { "DONU", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-DONU", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-68.4f, -72.3f), Scale = 0.45f, AnchorBone = "Hips" },
             new EyeConfig { Offset = new Vector2(82.9f, -83.3f), Scale = 0.45f, AnchorBone = "Hips" },
         }},
-        { "EXPLODER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-EXPLODER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-29.5f, -24.9f), Scale = 0.15f, AnchorBone = "shell" },
             new EyeConfig { Offset = new Vector2(4.0f, -24.2f), Scale = 0.15f, AnchorBone = "shell" },
         }},
-        { "FUNGI_BEAST", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-FUNGI_BEAST", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(6.5f, -16.8f), Scale = 0.08f, AnchorBone = "mouth" },
             new EyeConfig { Offset = new Vector2(-2.5f, -20.1f), Scale = 0.13f, AnchorBone = "mushroom_cap" },
             new EyeConfig { Offset = new Vector2(5.6f, 7.8f), Scale = 0.13f, AnchorBone = "mushroom_cap" },
         }},
-        { "GIANT_HEAD", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GIANT_HEAD", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.36f, AnchorBone = "el2" },
             new EyeConfig { Offset = new Vector2(-4.0f, 7.4f), Scale = 0.36f, AnchorBone = "el1" },
         }},
-        { "GREMLIN_FAT", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_FAT", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-12.3f, -2.6f), Scale = 0.07f, AnchorBone = "eyes" },
             new EyeConfig { Offset = new Vector2(12.4f, -0.4f), Scale = 0.07f, AnchorBone = "eyes" },
         }},
-        { "GREMLIN_LEADER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_LEADER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.11f, AnchorBone = "Eye_R" },
             new EyeConfig { Offset = new Vector2(0.9f, 0.1f), Scale = 0.11f, AnchorBone = "Eye_L" },
         }},
-        { "GREMLIN_MAD", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_MAD", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-7.3f, -5.2f), Scale = 0.08f, AnchorBone = "eyes" },
             new EyeConfig { Offset = new Vector2(9.5f, -4.2f), Scale = 0.08f, AnchorBone = "eyes" },
         }},
-        { "GREMLIN_NOB", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_NOB", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-14.5f, 2.3f), Scale = 0.12f, AnchorBone = "eyes" },
             new EyeConfig { Offset = new Vector2(13.9f, -1.6f), Scale = 0.12f, AnchorBone = "eyes" },
         }},
-        { "GREMLIN_SHIELD", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_SHIELD", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-8.6f, 2.8f), Scale = 0.05f, AnchorBone = "eyes" },
             new EyeConfig { Offset = new Vector2(2.4f, 3.1f), Scale = 0.05f, AnchorBone = "eyes" },
         }},
-        { "GREMLIN_SNEAKY", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_SNEAKY", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-5.1f, 2.7f), Scale = 0.05f, AnchorBone = "eyes" },
             new EyeConfig { Offset = new Vector2(7.1f, 1.8f), Scale = 0.05f, AnchorBone = "eyes" },
         }},
-        { "GREMLIN_WIZARD", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GREMLIN_WIZARD", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-5.7f, -2.0f), Scale = 0.05f, AnchorBone = "eyes" },
             new EyeConfig { Offset = new Vector2(6.7f, 1.0f), Scale = 0.05f, AnchorBone = "eyes" },
         }},
-        { "GUARDIAN", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-GUARDIAN", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-59.6f, 15.6f), Scale = 0.27f, AnchorBone = "head" },
             new EyeConfig { Offset = new Vector2(2.4f, 19.0f), Scale = 0.27f, AnchorBone = "head" },
         }},
-        { "JAW_WORM", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-JAW_WORM", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-4.7f, -2.0f), Scale = 0.18f, AnchorBone = "bone41" },
             new EyeConfig { Offset = new Vector2(36.1f, -2.0f), Scale = 0.18f, AnchorBone = "bone41" },
         }},
-        { "LAGAVULIN", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-LAGAVULIN", new EyeConfig[] {
     new EyeConfig { Offset = new Vector2(25.7f, 25.9f), Scale = 0.22f, AnchorBone = "Shell_Main",
         BoneSegments = new Dictionary<string, BoneSegment[]> {
             { "Idle_2", new BoneSegment[] {
@@ -1375,68 +1375,68 @@ public static class CreatureGooglyEyesRegistry
             } },
         } },
 }},
-        { "LOOTER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-LOOTER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-0.1f, 4.0f), Scale = 0.06f, AnchorBone = "eyelid" },
         }},
-        { "LOUSE_GREEN", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-LOUSE_GREEN", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-5.7f, -1.6f), Scale = 0.07f, AnchorBone = "ant holder" },
         }},
-        { "LOUSE_RED", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-LOUSE_RED", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-5.7f, 1.0f), Scale = 0.07f, AnchorBone = "ant holder" },
         }},
-        { "MAW", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-MAW", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.6f, -2.3f), Scale = 0.25f, AnchorBone = "bone57" },
             new EyeConfig { Offset = new Vector2(57.7f, 2.5f), Scale = 0.25f, AnchorBone = "bone57" },
         }},
-        { "MUGGER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-MUGGER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.4f, 5.4f), Scale = 0.06f, AnchorBone = "eyelid" },
         }},
-        { "MYSTIC", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-MYSTIC", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-11.7f, -6.6f), Scale = 0.06f, AnchorBone = "hair_" },
         }},
-        { "NEMESIS", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-NEMESIS", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(2.0f, 2.6f), Scale = 0.14f, AnchorBone = "eye0" },
             new EyeConfig { Offset = new Vector2(-1.3f, 0.4f), Scale = 0.11f, AnchorBone = "eye1" },
             new EyeConfig { Offset = new Vector2(-0.6f, 0.6f), Scale = 0.10f, AnchorBone = "eye2" },
         }},
-        { "ORB_WALKER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-ORB_WALKER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-41.6f, -16.8f), Scale = 0.23f, AnchorBone = "head" },
             new EyeConfig { Offset = new Vector2(8.0f, -10.9f), Scale = 0.23f, AnchorBone = "head" },
         }},
-        { "POINTY", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-POINTY", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(23.0f, -0.1f), Scale = 0.07f, AnchorBone = "Neck" },
             new EyeConfig { Offset = new Vector2(37.9f, 5.7f), Scale = 0.07f, AnchorBone = "Neck" },
         }},
-        { "REPTOMANCER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-REPTOMANCER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-6.7f, -6.0f), Scale = 0.07f, AnchorBone = "HairBack_" },
             new EyeConfig { Offset = new Vector2(-5.5f, 9.4f), Scale = 0.07f, AnchorBone = "HairBack_" },
         }},
-        { "REPULSOR", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-REPULSOR", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-8.8f, -7.7f), Scale = 0.09f, AnchorBone = "head" },
             new EyeConfig { Offset = new Vector2(11.8f, -6.7f), Scale = 0.09f, AnchorBone = "head" },
         }},
-        { "ROMEO", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-ROMEO", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(26.0f, -21.3f), Scale = 0.07f, AnchorBone = "Neck" },
             new EyeConfig { Offset = new Vector2(19.8f, -6.2f), Scale = 0.07f, AnchorBone = "Neck" },
         }},
-        { "SENTRY", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SENTRY", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.27f, AnchorBone = "jewel" },
         }},
-        { "SHELLED_PARASITE", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SHELLED_PARASITE", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-34.8f, -40.5f), Scale = 0.27f, AnchorBone = "hips" },
             new EyeConfig { Offset = new Vector2(23.7f, -30.8f), Scale = 0.27f, AnchorBone = "hips" },
         }},
-        { "SLAVER_BLUE", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SLAVER_BLUE", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.5f, -0.5f), Scale = 0.05f, AnchorBone = "eye" },
         }},
-        { "SLAVER_RED", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SLAVER_RED", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.4f, -0.2f), Scale = 0.05f, AnchorBone = "eye" },
         }},
-        { "SLIME_BOSS", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SLIME_BOSS", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-7.0f, -17.0f), Scale = 0.55f, AnchorBone = "eyeleft" },
             new EyeConfig { Offset = new Vector2(6.0f, -6.2f), Scale = 0.55f, AnchorBone = "eyeright" },
         }},
-        { "SNAKE_PLANT", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SNAKE_PLANT", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(32.5f, -0.4f), Scale = 0.10f, AnchorBone = "t3_25" },
             new EyeConfig { Offset = new Vector2(11.0f, 2.8f), Scale = 0.10f, AnchorBone = "t3_25" },
             new EyeConfig { Offset = new Vector2(38.6f, -0.7f), Scale = 0.10f, AnchorBone = "t1_19" },
@@ -1444,27 +1444,27 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(27.8f, 3.2f), Scale = 0.10f, AnchorBone = "t2_23" },
             new EyeConfig { Offset = new Vector2(7.4f, 4.0f), Scale = 0.10f, AnchorBone = "t2_23" },
         }},
-        { "SNECKO", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SNECKO", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(3.6f, 2.1f), Scale = 0.23f, AnchorBone = "eye" },
         }},
-        { "SPHERIC_GUARDIAN", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SPHERIC_GUARDIAN", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-48.3f, -31.3f), Scale = 0.27f, AnchorBone = "Main_Orb" },
             new EyeConfig { Offset = new Vector2(10.5f, -31.0f), Scale = 0.27f, AnchorBone = "Main_Orb" },
         }},
-        { "SPIKE_SLIME_LARGE", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SPIKE_SLIME_LARGE", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(6.2f, 1.4f), Scale = 0.22f, AnchorBone = "eyeball" },
         }},
-        { "SPIKE_SLIME_MEDIUM", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SPIKE_SLIME_MEDIUM", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(3.6f, 2.4f), Scale = 0.15f, AnchorBone = "eye" },
         }},
-        { "SPIKE_SLIME_SMALL", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SPIKE_SLIME_SMALL", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.2f, -0.5f), Scale = 0.09f, AnchorBone = "eye" },
         }},
-        { "SPIKER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SPIKER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-21.0f, -20.9f), Scale = 0.14f, AnchorBone = "body" },
             new EyeConfig { Offset = new Vector2(8.3f, -24.0f), Scale = 0.14f, AnchorBone = "body" },
         }},
-        { "SPIRE_GROWTH", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-SPIRE_GROWTH", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(19.0f, -11.8f), Scale = 0.18f, AnchorBone = "Tentacle_main_5" },
             new EyeConfig { Offset = new Vector2(-6.9f, 15.4f), Scale = 0.18f, AnchorBone = "Tentacle_main_5" },
             new EyeConfig { Offset = new Vector2(-2.6f, -4.1f), Scale = 0.06f, AnchorBone = "Right_tentacle7" },
@@ -1472,21 +1472,21 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(10.2f, -5.3f), Scale = 0.06f, AnchorBone = "Left_tentacle5" },
             new EyeConfig { Offset = new Vector2(5.9f, 8.4f), Scale = 0.06f, AnchorBone = "Left_tentacle5" },
         }},
-        { "TASKMASTER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-TASKMASTER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-2.6f, 13.3f), Scale = 0.09f, AnchorBone = "face" },
         }},
-        { "TIME_EATER", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-TIME_EATER", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(5.3f, -3.0f), Scale = 0.18f, AnchorBone = "antL7" },
             new EyeConfig { Offset = new Vector2(11.1f, -2.1f), Scale = 0.18f, AnchorBone = "antR9" },
         }},
-        { "TORCH_HEAD", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-TORCH_HEAD", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-18.2f, -3.9f), Scale = 0.14f, AnchorBone = "fireslot" },
             new EyeConfig { Offset = new Vector2(15.8f, -4.2f), Scale = 0.14f, AnchorBone = "fireslot" },
         }},
-        { "TRANSIENT", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-TRANSIENT", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, 0.0f), Scale = 0.20f, AnchorBone = "Glow" },
         }},
-        { "WRITHING_MASS", new EyeConfig[] {
+        { "ACTSFROMTHEPAST-WRITHING_MASS", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(-0.2f, 6.5f), Scale = 0.55f, AnchorBone = "bone" },
         }},
     };
