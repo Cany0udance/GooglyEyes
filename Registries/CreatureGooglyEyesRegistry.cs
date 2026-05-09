@@ -793,6 +793,10 @@ public static class CreatureGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(4.9f, -76.0f), Scale = 0.48f, AnchorBone = "top_scroll_base" },
             new EyeConfig { Offset = new Vector2(1.4f, 25.9f), Scale = 0.48f, AnchorBone = "top_scroll_base" },
         }},
+        { "SKULKING_COLONY", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(105.1f, -11.3f), Scale = 0.44f, AnchorBone = "head_4a" },
+            new EyeConfig { Offset = new Vector2(90.4f, 93.5f), Scale = 0.44f, AnchorBone = "head_4a" },
+        }},
         { "SHRINKER_BEETLE", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(0.0f, -0.0f), Scale = 0.48f, AnchorBone = "eye_f" },
         }},

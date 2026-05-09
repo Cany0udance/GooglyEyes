@@ -36,8 +36,8 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-154.8f, -341.8f), Scale = 0.02f },
         }},
         { "APPARITION", new CardEyeConfig[] {
-            new CardEyeConfig { Offset = new Vector2(-178.9f, -290.3f), Scale = 0.20f },
-            new CardEyeConfig { Offset = new Vector2(-127.8f, -290.5f), Scale = 0.20f },
+            new CardEyeConfig { Offset = new Vector2(-114.8f, -314.2f), Scale = 0.10f },
+            new CardEyeConfig { Offset = new Vector2(-139.5f, -324.7f), Scale = 0.10f },
         }},
         { "ARSENAL", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-64.3f, -260.3f), Scale = 0.03f },
@@ -47,7 +47,8 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-151.9f, -329.2f), Scale = 0.07f },
         }},
         { "BAD_LUCK", new CardEyeConfig[] {
-            new CardEyeConfig { Offset = new Vector2(-101.8f, -263.8f), Scale = 0.09f },
+            new CardEyeConfig { Offset = new Vector2(-122.2f, -330.5f), Scale = 0.20f },
+            new CardEyeConfig { Offset = new Vector2(-173.5f, -304.4f), Scale = 0.20f },
         }},
         { "BANSHEES_CRY", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-207.5f, -304.3f), Scale = 0.07f },
@@ -144,6 +145,10 @@ public static class CardGooglyEyesRegistry
         { "BYRD_SWOOP", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-138.0f, -337.4f), Scale = 0.08f },
         }},
+        { "BYRDONIS_EGG", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-167.3f, -320.4f), Scale = 0.18f },
+            new CardEyeConfig { Offset = new Vector2(-124.2f, -319.1f), Scale = 0.18f },
+        }},
         { "CALAMITY", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-143.8f, -277.5f), Scale = 0.30f },
         }},
@@ -199,6 +204,10 @@ public static class CardGooglyEyesRegistry
         }},
         { "CONQUEROR", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-116.7f, -345.6f), Scale = 0.08f },
+        }},
+        { "CONSUMING_SHADOW", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-95.6f, -229.1f), Scale = 0.06f },
+            new CardEyeConfig { Offset = new Vector2(-103.5f, -216.6f), Scale = 0.08f },
         }},
         { "CONVERGENCE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-103.1f, -302.4f), Scale = 0.15f },
@@ -396,8 +405,16 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-189.5f, -288.4f), Scale = 0.20f },
             new CardEyeConfig { Offset = new Vector2(-128.4f, -290.2f), Scale = 0.20f },
         }},
+        { "FEEDING_FRENZY", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-186.0f, -351.3f), Scale = 0.20f },
+            new CardEyeConfig { Offset = new Vector2(-123.9f, -353.1f), Scale = 0.20f },
+        }},
         { "FEEL_NO_PAIN", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-133.1f, -321.4f), Scale = 0.11f },
+        }},
+        { "FERAL", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-229.8f, -308.5f), Scale = 0.10f },
+            new CardEyeConfig { Offset = new Vector2(-202.0f, -293.2f), Scale = 0.16f },
         }},
         { "FIEND_FIRE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-150.9f, -255.0f), Scale = 0.03f },
@@ -406,6 +423,9 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-143.8f, -322.5f), Scale = 0.08f },
             new CardEyeConfig { Offset = new Vector2(-74.3f, -310.3f), Scale = 0.07f },
             new CardEyeConfig { Offset = new Vector2(-88.8f, -308.2f), Scale = 0.07f },
+        }},
+        { "FIGHT_THROUGH", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-53.4f, -330.8f), Scale = 0.30f },
         }},
         { "FINISHER", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-67.8f, -275.8f), Scale = 0.09f },
@@ -521,6 +541,10 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-132.6f, -320.9f), Scale = 0.05f },
             new CardEyeConfig { Offset = new Vector2(-149.5f, -322.6f), Scale = 0.06f },
         }},
+        { "HEMOKINESIS", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-102.5f, -339.1f), Scale = 0.10f },
+            new CardEyeConfig { Offset = new Vector2(-77.7f, -340.6f), Scale = 0.10f },
+        }},
         { "HOLOGRAM", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-233.8f, -231.2f), Scale = 0.10f, Opacity = 0.45f },
             new CardEyeConfig { Offset = new Vector2(-244.7f, -247.1f), Scale = 0.06f, Opacity = 0.45f },
@@ -528,6 +552,9 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-208.3f, -276.1f), Scale = 0.09f, Opacity = 0.45f },
             new CardEyeConfig { Offset = new Vector2(-148.7f, -291.6f), Scale = 0.20f },
             new CardEyeConfig { Offset = new Vector2(-168.7f, -318.8f), Scale = 0.10f },
+        }},
+        { "HOWL_FROM_BEYOND", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-182.7f, -291.0f), Scale = 0.16f },
         }},
         { "HUDDLE_UP", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-201.2f, -308.9f), Scale = 0.06f },
@@ -605,6 +632,11 @@ public static class CardGooglyEyesRegistry
         { "LETHALITY", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-141.8f, -335.4f), Scale = 0.03f },
             new CardEyeConfig { Offset = new Vector2(-134.2f, -331.6f), Scale = 0.03f },
+        }},
+        { "LIFT", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-133.9f, -341.1f), Scale = 0.10f },
+            new CardEyeConfig { Offset = new Vector2(-231.2f, -276.3f), Scale = 0.05f },
+            new CardEyeConfig { Offset = new Vector2(-220.1f, -285.2f), Scale = 0.05f },
         }},
         { "LIGHTNING_ROD", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-200.0f, -275.9f), Scale = 0.11f },
@@ -901,6 +933,10 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-163.9f, -298.5f), Scale = 0.06f },
             new CardEyeConfig { Offset = new Vector2(-140.7f, -299.8f), Scale = 0.12f },
         }},
+        { "SHATTER", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-149.5f, -335.1f), Scale = 0.02f },
+            new CardEyeConfig { Offset = new Vector2(-149.3f, -329.8f), Scale = 0.03f },
+        }},
         { "SHROUD", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-140.4f, -301.4f), Scale = 0.06f },
             new CardEyeConfig { Offset = new Vector2(-158.4f, -301.4f), Scale = 0.06f },
@@ -919,6 +955,9 @@ public static class CardGooglyEyesRegistry
         { "SLICE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-160.0f, -333.9f), Scale = 0.10f },
             new CardEyeConfig { Offset = new Vector2(-124.2f, -339.1f), Scale = 0.10f },
+        }},
+        { "SMOKESTACK", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-132.6f, -358.1f), Scale = 0.10f },
         }},
         { "SNAKEBITE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-241.1f, -280.3f), Scale = 0.06f },
@@ -945,6 +984,10 @@ public static class CardGooglyEyesRegistry
         { "SPIRIT_OF_ASH", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-134.8f, -321.8f), Scale = 0.03f },
             new CardEyeConfig { Offset = new Vector2(-145.5f, -324.0f), Scale = 0.06f },
+        }},
+        { "SPITE", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-199.2f, -284.4f), Scale = 0.16f },
+            new CardEyeConfig { Offset = new Vector2(-155.4f, -286.5f), Scale = 0.16f },
         }},
         { "SPOILS_OF_BATTLE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-223.9f, -289.0f), Scale = 0.10f },
@@ -1091,6 +1134,10 @@ public static class CardGooglyEyesRegistry
             new CardEyeConfig { Offset = new Vector2(-153.5f, -256.2f), Scale = 0.03f },
             new CardEyeConfig { Offset = new Vector2(-146.4f, -256.3f), Scale = 0.03f },
         }},
+        { "VOLTAIC", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-169.0f, -284.4f), Scale = 0.03f },
+            new CardEyeConfig { Offset = new Vector2(-166.8f, -274.0f), Scale = 0.06f },
+        }},
         { "WHISTLE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-111.0f, -311.1f), Scale = 0.05f },
             new CardEyeConfig { Offset = new Vector2(-95.1f, -317.9f), Scale = 0.04f },
@@ -1102,11 +1149,11 @@ public static class CardGooglyEyesRegistry
         
         // Acts From The Past
         
-        { "MADNESS", new CardEyeConfig[] {
+        { "ACTSFROMTHEPAST-MADNESS", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-186.1f, -317.4f), Scale = 0.20f },
             new CardEyeConfig { Offset = new Vector2(-144.5f, -331.2f), Scale = 0.20f },
         }},
-        { "NECRONOMICURSE", new CardEyeConfig[] {
+        { "ACTSFROMTHEPAST-NECRONOMICURSE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-131.5f, -330.6f), Scale = 0.30f },
             new CardEyeConfig { Offset = new Vector2(-197.2f, -318.8f), Scale = 0.30f },
         }},

@@ -111,6 +111,10 @@ public static class ScreenGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(1260.7f, 704.2f), Scale = 0.10f },
             new EyeConfig { Offset = new Vector2(1283.9f, 705.3f), Scale = 0.10f },
         }},
+        { "res://scenes/events/background_scenes/nonupeipe.tscn", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(1126.4f, 200.5f), Scale = 0.23f },
+            new EyeConfig { Offset = new Vector2(1050.6f, 159.6f), Scale = 0.23f },
+        }},
         { "res://images/events/potion_courier.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(965.8f, 749.0f), Scale = 0.30f },
         }},
@@ -146,6 +150,12 @@ public static class ScreenGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(1220.3f, 950.1f), Scale = 0.23f },
             new EyeConfig { Offset = new Vector2(1272.7f, 937.9f), Scale = 0.23f },
         }},
+        { "res://scenes/events/background_scenes/vakuu.tscn", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(782.3f, 113.5f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(641.5f, 123.7f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(626.2f, 180.1f), Scale = 0.30f },
+            new EyeConfig { Offset = new Vector2(746.3f, 158.5f), Scale = 0.30f },
+        }},
         { "res://images/events/war_historian_repy.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1036.2f, 801.9f), Scale = 0.14f },
             new EyeConfig { Offset = new Vector2(1085.4f, 799.3f), Scale = 0.14f },
@@ -165,18 +175,26 @@ public static class ScreenGooglyEyesRegistry
         
         // Acts From The Past
         
-        { "res://images/events/augmenter.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-augmenter.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1095.0f, 581.2f), Scale = 0.60f },
         }},
-        { "res://images/events/big_fish.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-big_fish.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1326.7f, 878.6f), Scale = 0.40f },
             new EyeConfig { Offset = new Vector2(1189.3f, 886.2f), Scale = 0.40f },
         }},
-        { "res://images/events/cleric.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-bonfire_spirits.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(800.0f, 710.4f), Scale = 0.10f },
+            new EyeConfig { Offset = new Vector2(821.3f, 713.3f), Scale = 0.10f },
+            new EyeConfig { Offset = new Vector2(1185.5f, 610.8f), Scale = 0.10f },
+            new EyeConfig { Offset = new Vector2(1164.1f, 608.0f), Scale = 0.10f },
+            new EyeConfig { Offset = new Vector2(1352.5f, 857.3f), Scale = 0.12f },
+            new EyeConfig { Offset = new Vector2(1326.6f, 855.1f), Scale = 0.12f },
+        }},
+        { "res://images/events/actsfromthepast-cleric.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1084.4f, 693.0f), Scale = 0.40f },
             new EyeConfig { Offset = new Vector2(967.0f, 693.0f), Scale = 0.40f },
         }},
-        { "res://images/events/council_of_ghosts.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-council_of_ghosts.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(787.6f, 723.7f), Scale = 0.14f },
             new EyeConfig { Offset = new Vector2(815.0f, 737.0f), Scale = 0.14f },
             new EyeConfig { Offset = new Vector2(988.3f, 631.4f), Scale = 0.20f },
@@ -184,19 +202,38 @@ public static class ScreenGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(1094.4f, 838.3f), Scale = 0.20f },
             new EyeConfig { Offset = new Vector2(1052.5f, 849.5f), Scale = 0.20f },
         }},
-        { "res://images/events/forgotten_altar.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-designer_in_spire.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(1067.6f, 664.7f), Scale = 0.40f },
+        }},
+        { "res://images/events/actsfromthepast-face_trader.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(977.2f, 711.3f), Scale = 0.35f },
+            new EyeConfig { Offset = new Vector2(1065.8f, 711.3f), Scale = 0.35f },
+            new EyeConfig { Offset = new Vector2(798.3f, 594.9f), Scale = 0.24f },
+            new EyeConfig { Offset = new Vector2(745.1f, 593.0f), Scale = 0.24f },
+            new EyeConfig { Offset = new Vector2(721.8f, 854.2f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(678.0f, 854.2f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(768.1f, 1076.6f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(725.3f, 1083.9f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(1317.2f, 575.8f), Scale = 0.30f },
+            new EyeConfig { Offset = new Vector2(1380.0f, 565.3f), Scale = 0.30f },
+            new EyeConfig { Offset = new Vector2(1396.4f, 829.8f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(1347.3f, 836.2f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(1336.5f, 1070.4f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(1291.0f, 1080.8f), Scale = 0.25f },
+        }},
+        { "res://images/events/actsfromthepast-forgotten_altar.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1057.2f, 611.1f), Scale = 0.13f },
             new EyeConfig { Offset = new Vector2(1024.1f, 608.8f), Scale = 0.13f },
         }},
-        { "res://images/events/golden_idol.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-golden_idol.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1059.1f, 603.7f), Scale = 0.20f },
             new EyeConfig { Offset = new Vector2(1012.5f, 600.6f), Scale = 0.20f },
         }},
-        { "res://images/events/knowing_skull.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-knowing_skull.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1052.0f, 597.3f), Scale = 0.50f },
             new EyeConfig { Offset = new Vector2(1162.1f, 599.0f), Scale = 0.50f },
         }},
-        { "res://images/events/living_wall.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-living_wall.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1149.1f, 666.1f), Scale = 0.40f },
             new EyeConfig { Offset = new Vector2(994.2f, 673.6f), Scale = 0.40f },
             new EyeConfig { Offset = new Vector2(1356.2f, 958.6f), Scale = 0.40f },
@@ -204,29 +241,45 @@ public static class ScreenGooglyEyesRegistry
             new EyeConfig { Offset = new Vector2(717.5f, 800.0f), Scale = 0.37f },
             new EyeConfig { Offset = new Vector2(792.7f, 822.4f), Scale = 0.37f },
         }},
-        { "res://images/events/mind_bloom.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-match_and_keep.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(1066.2f, 610.0f), Scale = 0.40f },
+            new EyeConfig { Offset = new Vector2(935.8f, 623.0f), Scale = 0.40f },
+        }},
+        { "res://images/events/actsfromthepast-mind_bloom.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1105.0f, 1043.5f), Scale = 0.50f },
             new EyeConfig { Offset = new Vector2(966.8f, 1045.3f), Scale = 0.50f },
         }},
-        { "res://images/events/moai_head.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-moai_head.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1139.2f, 515.5f), Scale = 0.60f },
             new EyeConfig { Offset = new Vector2(962.3f, 501.8f), Scale = 0.60f },
         }},
-        { "res://images/events/nloth.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-nloth.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1095.7f, 676.6f), Scale = 0.60f },
             new EyeConfig { Offset = new Vector2(973.3f, 670.0f), Scale = 0.60f },
         }},
-        { "res://images/events/pleading_vagrant.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-pleading_vagrant.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1159.0f, 777.5f), Scale = 0.60f },
             new EyeConfig { Offset = new Vector2(1031.0f, 748.5f), Scale = 0.60f },
         }},
-        { "res://images/events/sssserpent.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-sssserpent.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(986.4f, 711.1f), Scale = 0.50f },
             new EyeConfig { Offset = new Vector2(819.8f, 715.8f), Scale = 0.50f },
         }},
-        { "res://images/events/vampires.png", new EyeConfig[] {
+        { "res://images/events/actsfromthepast-the_woman_in_blue.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(943.1f, 585.4f), Scale = 0.20f },
+            new EyeConfig { Offset = new Vector2(992.8f, 583.5f), Scale = 0.20f },
+        }},
+        { "res://images/events/actsfromthepast-vampires.png", new EyeConfig[] {
             new EyeConfig { Offset = new Vector2(1137.4f, 544.9f), Scale = 0.30f },
             new EyeConfig { Offset = new Vector2(1058.4f, 546.5f), Scale = 0.30f },
+        }},
+        { "res://images/events/actsfromthepast-we_meet_again.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(1074.0f, 662.5f), Scale = 0.40f },
+            new EyeConfig { Offset = new Vector2(984.0f, 661.5f), Scale = 0.40f },
+        }},
+        { "res://images/events/actsfromthepast-wheel_of_change.png", new EyeConfig[] {
+            new EyeConfig { Offset = new Vector2(943.3f, 695.8f), Scale = 0.30f },
+            new EyeConfig { Offset = new Vector2(1030.8f, 695.8f), Scale = 0.30f },
         }},
     };
 }
