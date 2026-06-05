@@ -341,7 +341,7 @@ public static class ScreenGooglyEyesHelper
                     float rawTime = currentEntry.GetTrackTime();
                     currentTime = rawTime >= duration ? duration : rawTime % duration;
                 }
-                currentAnimName = currentEntry.GetAnimation().GetName();
+                currentAnimName = SpineReflectionHelper.GetAnimationName(currentEntry, "animation");
             }
         }
         catch (ObjectDisposedException) { return; }

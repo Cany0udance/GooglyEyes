@@ -134,6 +134,9 @@ public static class RelicGooglyEyesRegistry
             new RelicEyeConfig { Offset = new Vector2(-4.4f, 7.0f), Scale = 0.10f },
             new RelicEyeConfig { Offset = new Vector2(18.2f, 6.2f), Scale = 0.06f },
         }},
+        { "SCREAMING_FLAGON", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(-6.8f, -3.8f), Scale = 0.05f },
+        }},
         { "SNECKO_EYE", new RelicEyeConfig[] {
             new RelicEyeConfig { Offset = new Vector2(1.0f, -1.0f), Scale = 0.29f },
         }},
@@ -157,16 +160,33 @@ public static class RelicGooglyEyesRegistry
             new RelicEyeConfig { Offset = new Vector2(-4.4f, -15.2f), Scale = 0.04f },
             new RelicEyeConfig { Offset = new Vector2(6.0f, -15.4f), Scale = 0.04f },
         }},
-        { "ACTSFROMTHEPAST-GOLDEN_IDOL_ORIGINAL", new RelicEyeConfig[] {
-            new RelicEyeConfig { Offset = new Vector2(-4.8f, -13.9f), Scale = 0.04f },
-            new RelicEyeConfig { Offset = new Vector2(5.7f, -14.2f), Scale = 0.04f },
+        { "ACTSFROMTHEPAST-CULTIST_HEADPIECE", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(5.8f, -4.6f), Scale = 0.06f },
+        }},
+        { "ACTSFROMTHEPAST-FACE_OF_CLERIC", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(1.1f, -0.2f), Scale = 0.05f },
+            new RelicEyeConfig { Offset = new Vector2(15.4f, -0.3f), Scale = 0.05f },
+        }},
+        { "ACTSFROMTHEPAST-GOLDEN_IDOL", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(5.8f, -14.1f), Scale = 0.04f },
+            new RelicEyeConfig { Offset = new Vector2(-5.0f, -14.3f), Scale = 0.04f },
+        }},
+        { "ACTSFROMTHEPAST-GREMLIN_VISAGE", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(-9.5f, 2.0f), Scale = 0.09f },
+            new RelicEyeConfig { Offset = new Vector2(11.1f, 2.1f), Scale = 0.09f },
         }},
         { "ACTSFROMTHEPAST-NECRONOMICON", new RelicEyeConfig[] {
             new RelicEyeConfig { Offset = new Vector2(-8.4f, -3.6f), Scale = 0.08f },
             new RelicEyeConfig { Offset = new Vector2(6.7f, -12.2f), Scale = 0.08f },
         }},
-
-        
+        { "ACTSFROMTHEPAST-NLOTHS_HUNGRY_FACE", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(8.2f, -0.2f), Scale = 0.08f },
+            new RelicEyeConfig { Offset = new Vector2(-11.0f, -1.1f), Scale = 0.08f },
+        }},
+        { "ACTSFROMTHEPAST-SSSERPENT_HEAD", new RelicEyeConfig[] {
+            new RelicEyeConfig { Offset = new Vector2(9.3f, -11.4f), Scale = 0.08f },
+            new RelicEyeConfig { Offset = new Vector2(-12.3f, -18.2f), Scale = 0.08f },
+        }},
         
     };
 }

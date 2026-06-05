@@ -1122,48 +1122,56 @@ public static class CreatureGooglyEyesRegistry
         } },
 }},
         { "TUNNELER", new EyeConfig[] {
-    new EyeConfig { Offset = new Vector2(1.5f, -0.6f), Scale = 0.61f, AnchorBone = "eye_r",
+    new EyeConfig { Offset = new Vector2(-25.6f, 3.4f), Scale = 0.67f, AnchorBone = "eye_l",
         BoneSegments = new Dictionary<string, BoneSegment[]> {
             { "burrow", new BoneSegment[] {
-                new BoneSegment { StartTime = 0.00f, EndTime = 0.74f, BoneName = "eye_r", Offset = new Vector2(1.5f, -0.6f) },
-                new BoneSegment { StartTime = 0.74f, EndTime = 0.77f, BoneName = "eye_r", Offset = new Vector2(1.5f, -0.6f), OpacityStart = 1.00f, OpacityEnd = 0.00f },
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.76f, BoneName = "eye_l", Offset = new Vector2(-25.6f, 3.4f) },
+                new BoneSegment { StartTime = 0.76f, EndTime = 0.77f, BoneName = "eye_l", Offset = new Vector2(-25.6f, 3.4f), OpacityStart = 1.00f, OpacityEnd = 0.00f },
                 new BoneSegment { StartTime = 0.77f, EndTime = 1.47f, Hidden = true },
             } },
             { "hidden_attack", new BoneSegment[] {
                 new BoneSegment { StartTime = 0.00f, EndTime = 1.57f, Hidden = true },
             } },
             { "hidden_die", new BoneSegment[] {
-                new BoneSegment { StartTime = 0.00f, EndTime = 0.04f, Hidden = true },
-                new BoneSegment { StartTime = 0.04f, EndTime = 1.40f, BoneName = "eye_r", Offset = new Vector2(1.5f, -0.6f) },
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.03f, Hidden = true },
+                new BoneSegment { StartTime = 0.03f, EndTime = 1.67f, BoneName = "eye_l", Offset = new Vector2(-25.6f, 3.4f) },
             } },
             { "hidden_loop", new BoneSegment[] {
                 new BoneSegment { StartTime = 0.00f, EndTime = 0.33f, Hidden = true },
             } },
+            { "stun", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.14f, Hidden = true },
+                new BoneSegment { StartTime = 0.14f, EndTime = 1.70f, BoneName = "eye_l", Offset = new Vector2(-25.6f, 3.4f) },
+            } },
             { "unburrow_attack", new BoneSegment[] {
                 new BoneSegment { StartTime = 0.00f, EndTime = 0.39f, Hidden = true },
-                new BoneSegment { StartTime = 0.39f, EndTime = 1.07f, BoneName = "eye_r", Offset = new Vector2(1.5f, -0.6f) },
+                new BoneSegment { StartTime = 0.39f, EndTime = 1.07f, BoneName = "eye_l", Offset = new Vector2(-25.6f, 3.4f) },
             } },
         } },
-    new EyeConfig { Offset = new Vector2(-6.8f, 3.1f), Scale = 0.61f, AnchorBone = "eye_l",
+    new EyeConfig { Offset = new Vector2(21.8f, -25.3f), Scale = 0.67f, AnchorBone = "eye_r",
         BoneSegments = new Dictionary<string, BoneSegment[]> {
             { "burrow", new BoneSegment[] {
-                new BoneSegment { StartTime = 0.00f, EndTime = 0.75f, BoneName = "eye_l", Offset = new Vector2(-6.8f, 3.1f) },
-                new BoneSegment { StartTime = 0.75f, EndTime = 0.77f, BoneName = "eye_l", Offset = new Vector2(-6.8f, 3.1f), OpacityStart = 1.00f, OpacityEnd = 0.00f },
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.75f, BoneName = "eye_r", Offset = new Vector2(21.8f, -25.3f) },
+                new BoneSegment { StartTime = 0.75f, EndTime = 0.77f, BoneName = "eye_r", Offset = new Vector2(21.8f, -25.3f), OpacityStart = 1.00f, OpacityEnd = 0.00f },
                 new BoneSegment { StartTime = 0.77f, EndTime = 1.47f, Hidden = true },
             } },
             { "hidden_attack", new BoneSegment[] {
                 new BoneSegment { StartTime = 0.00f, EndTime = 1.57f, Hidden = true },
             } },
             { "hidden_die", new BoneSegment[] {
-                new BoneSegment { StartTime = 0.00f, EndTime = 0.04f, Hidden = true },
-                new BoneSegment { StartTime = 0.04f, EndTime = 1.40f, BoneName = "eye_l", Offset = new Vector2(-6.8f, 3.1f) },
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.03f, Hidden = true },
+                new BoneSegment { StartTime = 0.03f, EndTime = 1.67f, BoneName = "eye_r", Offset = new Vector2(21.8f, -25.3f) },
             } },
             { "hidden_loop", new BoneSegment[] {
                 new BoneSegment { StartTime = 0.00f, EndTime = 0.33f, Hidden = true },
             } },
+            { "stun", new BoneSegment[] {
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.14f, Hidden = true },
+                new BoneSegment { StartTime = 0.14f, EndTime = 1.70f, BoneName = "eye_r", Offset = new Vector2(21.8f, -25.3f) },
+            } },
             { "unburrow_attack", new BoneSegment[] {
-                new BoneSegment { StartTime = 0.00f, EndTime = 0.39f, Hidden = true },
-                new BoneSegment { StartTime = 0.39f, EndTime = 1.07f, BoneName = "eye_l", Offset = new Vector2(-6.8f, 3.1f) },
+                new BoneSegment { StartTime = 0.00f, EndTime = 0.38f, Hidden = true },
+                new BoneSegment { StartTime = 0.38f, EndTime = 1.07f, BoneName = "eye_r", Offset = new Vector2(21.8f, -25.3f) },
             } },
         } },
 }},

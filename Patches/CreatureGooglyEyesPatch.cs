@@ -170,7 +170,7 @@ public static class CreatureGooglyEyesPatch
                     float rawTime = currentEntry.GetTrackTime();
                     currentTime = rawTime >= duration ? duration : rawTime % duration;
                 }
-                currentAnimName = currentEntry.GetAnimation().GetName();
+                currentAnimName = SpineReflectionHelper.GetAnimationName(currentEntry, "idle_loop");
             }
         }
         catch (ObjectDisposedException)

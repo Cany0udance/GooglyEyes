@@ -11,8 +11,8 @@ public static class CardGooglyEyesRegistry
     public static readonly Dictionary<string, CardEyeConfig[]> Configs = new()
     {
         { "ABRASIVE", new CardEyeConfig[] {
-            new CardEyeConfig { Offset = new Vector2(-117.9f, -304.3f), Scale = 0.20f },
-            new CardEyeConfig { Offset = new Vector2(-162.3f, -303.2f), Scale = 0.20f },
+            new CardEyeConfig { Offset = new Vector2(-167.7f, -327.2f), Scale = 0.12f },
+            new CardEyeConfig { Offset = new Vector2(-199.2f, -327.0f), Scale = 0.12f },
         }},
         { "ACCELERANT", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-182.8f, -318.0f), Scale = 0.11f },
@@ -1156,6 +1156,9 @@ public static class CardGooglyEyesRegistry
         { "ACTSFROMTHEPAST-NECRONOMICURSE", new CardEyeConfig[] {
             new CardEyeConfig { Offset = new Vector2(-131.5f, -330.6f), Scale = 0.30f },
             new CardEyeConfig { Offset = new Vector2(-197.2f, -318.8f), Scale = 0.30f },
+        }},
+        { "ACTSFROMTHEPAST-PAIN", new CardEyeConfig[] {
+            new CardEyeConfig { Offset = new Vector2(-58.2f, -261.5f), Scale = 0.05f },
         }},
     };
 }
