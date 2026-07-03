@@ -1266,12 +1266,15 @@ public class ScreenEditorTab : EditorTab
         if (_animController == null || _currentTrack1Anim == _appliedTrack1Anim) return;
         _appliedTrack1Anim = _currentTrack1Anim;
         _animState ??= _animController.GetAnimationState();
+
         if (string.IsNullOrEmpty(_currentTrack1Anim))
         {
             try { _animState.AddEmptyAnimation(1); } catch { }
             return;
         }
-        var entry = _animState.SetAnimation(_currentTrack1Anim, true, 1);
+
+        _animState.SetAnimation(_currentTrack1Anim, true, 1);
+        var entry = _animState.GetCurrent(1);
         entry?.SetTimeScale(_isPlaying ? 1f : 0f);
     }
 
@@ -1307,15 +1310,21 @@ public class ScreenEditorTab : EditorTab
         if (_animController == null) return;
         _currentAnimName = animName;
         _animState ??= _animController.GetAnimationState();
-        var entry = _animState.SetAnimation(animName, false);
+
+        _animState.SetAnimation(animName, false);
+        var entry = _animState.GetCurrent(0);
         if (entry == null) return;
+
+        _cachedTrackEntry?.Dispose();
         _cachedTrackEntry = entry;
         entry.SetTimeScale(0f);
+
         float duration = entry.GetAnimationEnd();
         float time = normalizedTime * duration;
         entry.SetTrackTime(time);
         _animState.Update(0f);
         _animState.Apply(_animController.GetSkeleton());
+
         _frameLabel.Text = $"{time:F2}s / {duration:F2}s";
         if (_showingBones) RefreshBonePositions();
     }
@@ -1324,8 +1333,11 @@ public class ScreenEditorTab : EditorTab
     {
         if (_animController == null) return;
         _animState ??= _animController.GetAnimationState();
-        var entry = _animState.SetAnimation(animName, false);
+
+        _animState.SetAnimation(animName, false);
+        var entry = _animState.GetCurrent(0);
         if (entry == null) return;
+
         entry.SetTimeScale(0f);
         entry.SetTrackTime(time);
         _animState.Update(0f);

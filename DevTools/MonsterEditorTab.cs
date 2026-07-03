@@ -1385,7 +1385,8 @@ public class MonsterEditorTab : EditorTab
             return;
         }
 
-        var entry = _animState.SetAnimation(_currentTrack1Anim, true, 1);
+        _animState.SetAnimation(_currentTrack1Anim, true, 1);
+        var entry = _animState.GetCurrent(1);
         entry?.SetTimeScale(_isPlaying ? 1f : 0f);
     }
 
@@ -1425,11 +1426,14 @@ public class MonsterEditorTab : EditorTab
         _currentAnimName = animName;
         _animState ??= _animController.GetAnimationState();
 
-        var entry = _animState.SetAnimation(animName, false);
+        _animState.SetAnimation(animName, false);
+        var entry = _animState.GetCurrent(0);
         if (entry == null) return;
 
+        _cachedTrackEntry?.Dispose();
         _cachedTrackEntry = entry;
         entry.SetTimeScale(0f);
+
         float duration = entry.GetAnimationEnd();
         float time = normalizedTime * duration;
         entry.SetTrackTime(time);
@@ -1445,8 +1449,10 @@ public class MonsterEditorTab : EditorTab
         if (_animController == null) return;
         _animState ??= _animController.GetAnimationState();
 
-        var entry = _animState.SetAnimation(animName, false);
+        _animState.SetAnimation(animName, false);
+        var entry = _animState.GetCurrent(0);
         if (entry == null) return;
+
         entry.SetTimeScale(0f);
         entry.SetTrackTime(time);
         _animState.Update(0f);

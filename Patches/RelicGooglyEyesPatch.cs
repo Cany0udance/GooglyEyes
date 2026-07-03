@@ -42,7 +42,8 @@ public static class RelicGooglyEyesPatch
         {
             RemoveDriver(__instance);
  
-            var model = __instance.Model;
+            var model = Traverse.Create(__instance)
+                .Field<RelicModel>("_model").Value;
             if (model == null) return;
  
             var relicId = model.Id.Entry;
